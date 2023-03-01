@@ -1,0 +1,152 @@
+Neutron Total Cross Section in liquid argon
+
+cross section and std in barn
+
+energy = 855keV
+total cross section =  0.944
+total std =  0.0670
+elastic cross section = 0.944
+elastic std = 0.0670
+(n,n') cross section = 0
+(n,n') std = 0
+
+energy = 860keV
+cross section =  3.810
+std =  0.135
+
+energy = 865keV
+cross section =  1.727
+std =  0.0907
+
+energy = 870keV
+cross section =  1.030
+std =  0.070
+
+energy = 875keV
+cross section =  4.389
+std =  0.145
+
+energy = 880keV
+cross section =  2.192
+std =  0.102
+
+energy = 885keV
+cross section =  1.642
+std =  0.0884
+
+energy = 890keV
+cross section =  1.784
+std =  0.0922
+
+energy = 895keV
+cross section =  1.039
+std =  0.0703
+
+energy = 900keV
+cross section = 3.995
+std =  0.138
+
+energy = 1MeV
+only elastic
+cross section =  3.156
+std =  0.0388
+
+energy = 2MeV
+tot_cross section = 4.873
+tot_std = 0.153
+elastic_cross section = 4.412
+elastic_std = 0.145
+
+energy = 5MeV
+tot_cross section = 3.289
+tot_std = 0.0396
+elastic_cross section = 1.850
+elastic_std = 0.0297
+(n,n') cross section = 1.436
+(n,n') std = 0.0261
+(n,p) cross section = 0.000949
+(n,p) std = 0.00067
+
+energy = 8MeV
+tot_cross section = 2.698
+tot_std = 0.0359
+elastic_cross section = 1.0737
+elastic_std = 0.0226
+(n,n') cross section = 1.607
+(n,n') std = 0.0277
+(n,p) cross section = 0.001898
+(n,p) std = 0.000949
+
+energy = 9MeV
+tot_cross section = 2.674
+tot_std = 0.0357
+elastic_cross section = 1.062
+elastic_std = 0.0225
+(n,n') cross section = 1.597
+(n,n') std = 0.0276
+(n,p) cross section =  0.001898
+(n,p) std = 0.000949
+
+energy = 10MeV
+tot_cross section = 2.522
+tot_std = 0.0347
+elastic_cross section = 0.916
+elastic_std = 0.0209
+(n,n') cross section = 1.574
+(n,n') std = 0.0274
+(n,p) cross section = 0.00807
+(n,p) std = 0.00196
+
+energy = 11MeV
+tot_cross section = 2.494
+tot_std = 0.0345
+elastic_cross section = 0.890
+elastic_std = 0.0206
+(n,n') cross section = 1.442
+(n,n') std = 0.0262
+(n,p) cross section = 0.00949
+(n,p) std = 0.00212
+(n,2n) cross section = 0.137
+(n,2n) std = 0.00807
+
+energy = 20MeV
+tot_cross section =  2.150
+tot_std = 0.0320
+elastic_cross section = 0.755
+elastic_std = 0.0189
+(n,2n) cross section = 0.969
+(n,2n) std = 0.0215
+(n,n') cross section = 0.236
+(n,n') std = 0.0106
+(n,p) cross section = 0.0285
+(n,p) std = 0.00368
+
+energy = 30MeV
+tot_cross section = 2.358
+tot_std = 0.0335
+elastic_cross section = 1.341
+elastic_std = 0.0253
+(n,2n) cross section = 0.235
+(n,2n) std = 0.0106
+(n,3n) cross section = 0.531
+(n,3n) std = 0.0159
+
+energy = 40MeV
+tot_cross section = 2.296
+tot_std = 0.0331
+elastic_cross section = 1.415
+elastic_std = 0.0259
+(n,2n) cross section = 0.183
+(n,2n) std = 0.00931
+(n,3n) cross section = 0.370
+(n,3n) std = 0.0133
+
+energy = 50MeV
+tot_cross section = 2.163
+tot_std = 0.0321
+elastic_cross section = 1.385
+elastic_std = 0.0257
+(n,2n) cross section = 0.143
+(n,2n) std = 0.00823
+(n,3n) cross section = 0.262
+(n,3n) std = 0.0112
