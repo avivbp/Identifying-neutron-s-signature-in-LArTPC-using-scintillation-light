@@ -1,0 +1,31 @@
+40 deg:
++ L_eff = 0.301, R = 0.121
+- L_eff = 0.4, R = 1.697
+= L_eff = 0.319, R = 0
+
+err_up,err_right = 0.018
+err_down,err_left = 0.081
+
+50 deg:
++ L_eff = 0.285, R = 1.121
+- L_eff = 0.368 , R = 6.152
+= L_eff = 0.337 , R = 1
+
+err_up,err_right = 0.052
+err_down,err_left = 0.031
+
+60 deg:
++ L_eff = 0.273 , R = 1
+- L_eff = 0.38 , R = 1.788
+= L_eff = 0.325 , R = 1
+
+err_up,err_right = 0.052
+err_down,err_left = 0.055
+
+90 deg:
++ L_eff = 0.267 , R = 2.758
+- L_eff = 0.372 , R = 1.121
+= L_eff = 0.335 , R = 1
+
+err_up,err_right = 0.068
+err_down,err_left = 0.037
