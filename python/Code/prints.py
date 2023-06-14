@@ -1408,3 +1408,408 @@ from functions import *
 # xpos = dat2.xpos
 # ypos = dat2.ypos
 # zpos = dat2.zpos
+
+# dat = pd.read_csv("C:\\Users\\Aviv\\PycharmProjects\\pythonProject3\\NuclearRecoils\\90\elasticEnergies.csv")
+#
+# nucleus_energy = dat.energy
+# neutron_time_of_flight_experimental = dat.timeOfFlight
+# nucleus_energy = nucleus_energy[neutron_time_of_flight_experimental > 42]
+# nucleus_energy = nucleus_energy[neutron_time_of_flight_experimental < 49]
+#
+# print("total number of detected events = ", len(nucleus_energy))
+#
+# # plt.hist(nucleus_energy, 500)
+# h1, bins1 = np.histogram(nucleus_energy, np.linspace(0, 200, 100))
+# bins1_centers = (bins1[1:] + bins1[:-1]) / 2
+#
+# parameters = curve_fit(gauss, bins1_centers, h1,
+#                        p0=[5, 31, 120, 7])
+# miu = parameters[0][2]
+# d_miu = parameters[1][2][2]
+# sigma = parameters[0][3]
+# d_sigma = parameters[1][3][3]
+#
+# bools = bins1_centers > 110
+# bools = bools < 130
+# bins1_centers = bins1_centers[bools]
+# h1 = h1[bools]
+# plt.step(bins1_centers, h1, where='mid')
+# plt.plot(bins1_centers, gauss(bins1_centers, parameters[0][0], parameters[0][1], miu, sigma),
+#          '--',
+#          label='Fit result', )
+# plt.xlabel('recoil energy[keV]')
+# plt.ylabel('count')
+# plt.title('nucleus recoil energy reconstruction')
+# plt.show()
+#
+# print("gaussian H + A * np.exp(-(x - x0) ** 2 / (2 * sigma ** 2))\n with params H = ", parameters[0][0], ", A = ",
+#       parameters[0][1], ", $\mu$ = ", miu, ", $\sigma$ = ", sigma)
+#
+# print("miu = ", miu, " +- ", np.sqrt(sigma ** 2 + d_sigma ** 2 + d_miu ** 2))
+#
+# print("chisquare = ",
+#       chisquare(h1, gauss(bins1_centers, parameters[0][0], parameters[0][1], parameters[0][2], parameters[0][3]))[
+#           0] / len(h1))
+# print("pvalue = ",
+#       chisquare(h1, gauss(bins1_centers, parameters[0][0], parameters[0][1], parameters[0][2], parameters[0][3]))[1])
+
+# xs = [11.5, 16.4, 28.5, 43.4, 60.5, 119.5]
+# dx1 = [2.1, 2.4, 3.2, 3.8, 4.3, 4.9]
+# ys1 = [0.321, 0.276, 0.209, 0.174, 0.151, 0.1112]
+# dy1 = [0.093, 0.075, 0.055, 0.043, 0.035, 0.022]
+# dx2 = [2.8, 3.9, 5.2, 6.0, 7.1, 7.7]
+# ys2 = [0.386, 0.305, 0.285, 0.294, 0.283, 0.301]
+# dy2 = [0.032, 0.020, 0.014, 0.023, 0.018, 0.019]
+# ys3 = [11.3235 / 159.1653, 13.8651 / 159.1653, 18.309 / 159.1653, 23.108 / 159.1653, 28.097 / 159.1653,
+#        41.344 / 159.1653]
+# dy3 = [0.021, 0.025, 0.032, 0.038, 0.044, 0.055]
+# plt.errorbar(xs, ys1, xerr=dx1, yerr=dy1, color='b', ecolor='b', fmt='-',
+#              label='my data,normalized vs equivalent er energy')
+# plt.errorbar(xs, ys2, xerr=dx2, yerr=dy2, color='grey', ecolor='grey', fmt='-', label='Creus et al.')
+# plt.errorbar(xs, ys3, xerr=dx1, yerr=dy1, color='b', ecolor='b', fmt='--',
+#              label='my data, all normalized vs 60keV pp')
+# plt.xlabel('nuclear recoil energy[keV]')
+# plt.ylabel('L_eff')
+# plt.title('$L_{eff}$ as a function of nuclear recoil energy')
+# plt.legend()
+# plt.show()
+
+# filename = "../references/Default_Dataset_diff.csv"
+# points = pd.read_csv(filename)
+# xs = points.x
+# ys = points.y
+# #
+# filename2 = "../references/Default_Dataset2.csv"
+# points2 = pd.read_csv(filename2)
+# xs2 = points2.x
+# ys2 = points2.y
+#
+# for i in range(len(xs2)):
+#     xs2[i] *= 1000
+#
+# # in keV
+# energies = [10, 20, 50, 75, 100, 250, 500, 1000]
+# mius = [5.098, 0.7053, 0.186, 0.156, 0.143, 0.1098, 0.0830, 0.0627]
+# stds = np.array([0.00583, 0.00194, 0.00197, 0.00160, 0.00299, 0.000598, 0.00148, 0.00040])
+#
+# mius = [5.104, 0.733, 0.202, 0.171, 0.157, 0.117, 0.0916, 0.0672]
+# stds = np.array([0.00643, 0.00195, 0.00113, 0.00134, 0.000823, 0.00077, 0.000409, 0.000123])
+#
+# # plt.plot(xs, ys, '--', color='orange',
+# #          label='$\mu = \mu_\\tau + \mu_\sigma + \mu_{\sigma R} + \mu_\kappa $ [Shehata et al. ,ME Conf.Proc.4(2007)]')
+# plt.errorbar(energies, mius, color='orange', yerr=stds, fmt='.', capthick=2, capsize=2, markeredgecolor='k',
+#              label='VALIDATION - Geant4 simulated $\gamma$ attenuation coefficient in water')
+# plt.plot(xs2, ys2, '--', color='orange', label='Grupen, Tum. Ther. Part. Beams. 538.(2000)')
+# energies_lAr = np.array([10, 20, 50, 75, 100, 250, 500, 1000, 10000, 50000, 100000, 1000000])
+# energies_lAr = energies_lAr
+# mius_lAr = [87.154, 11.765, 0.862, 0.372, 0.247, 0.136, 0.103, 0.0761, 0.0333, 0.0375, 0.0423, 0.0533]
+# stds_lAr = [0.0735, 0.0172, 0.00239, 0.00370, 0.00132,
+#             0.000706, 0.000417, 0.000220, 8.25e-05, 0.000171, 0.000183, 0.000638]
+# plt.errorbar(energies_lAr, mius_lAr, yerr=stds_lAr, fmt='.', capthick=2, capsize=2, markersize=10, markeredgecolor='k',
+#              color='blue', label='Geant4 simulated $\gamma$ attenuation coefficient in lAr')
+# cs = CubicSpline(energies_lAr, mius_lAr)
+# plt.plot(energies_lAr, cs(energies_lAr), '--')
+# # plt.legend(loc='upper right', fontsize=9)
+# plt.grid()
+# plt.xscale("log")
+# plt.yscale("log")
+# plt.xticks(fontsize=20)
+# plt.yticks(fontsize=20)
+# plt.xlabel("Photon energy [keV]",fontsize=20)
+# plt.ylabel("Linear attenuation coefficient [1/cm]",fontsize=20)
+# # plt.title("Linear attenuation coefficient vs photon energy")
+# plt.show()
+
+# dat = pd.read_csv('../edep_3500.csv')
+#
+# edep = dat.eDep
+# h, bins = np.histogram(edep, 100)
+# plt.step((bins[1:] + bins[:-1]) / 2, h)
+# plt.xlabel('energy deposit [keV]')
+# plt.ylabel('counts')
+# plt.title('energy deposit in liquid_scintillator histogram, 3.5 MeV primary neutron')
+# plt.show()
+
+# dat = pd.read_csv("C:\\Users\\Aviv\\PycharmProjects\\pythonProject3\\NuclearRecoils\\25\\truth_energies_25_wide.csv")
+#
+# nucleus_energy_elastic = dat.experimentalRecoilEnergy
+# h1, bins = np.histogram(nucleus_energy_elastic, np.arange(0, max(nucleus_energy_elastic), 1))
+# plt.errorbar((bins[1:] + bins[:-1]) / 2, h1, yerr=np.sqrt(h1), fmt='.', label='single elastic + external', color='red')
+#
+# plt.xlabel('energy[keV]')
+# plt.ylabel('count')
+# plt.yscale('log')
+# plt.title('recoil nucleus energy distribution following elastic scatter with $\\theta = 25^{\circ}$')
+# plt.legend()
+# plt.ylim([1, 4000])
+# plt.show()
+
+# plt.hist(coincidence_time, 100)
+# plt.xlabel('event coincidence time between PMTs[ns]')
+# plt.ylabel('number of events')
+# plt.title('coincidence time between PMTs per event')
+# plt.show()
+
+# plot_pmts("../Scintillation_Data/electron_recoil_scint\\PMTS_60.csv", 60, 1, 120, [0, 100, 158, 10])
+#
+# plot_pmts("../Scintillation_Data/electron_recoil_scint\\PMTS_122.csv", 122, 1, 200, [80, 240, 330, 15])
+#
+# plot_pmts("../Scintillation_Data/electron_recoil_scint\\PMTS_511.csv", 511, 0, 200, [])
+#
+# plot_pmts("../Scintillation_Data/electron_recoil_scint\\PMTS_662.csv", 662, 0, 200, [])
+#
+# plot_pmts("../Scintillation_Data/electron_recoil_scint\\PMTS_1274.csv", 1274, 0, 200, [])
+
+# filenames = ["edep_500_new.csv", "edep_1000_new.csv", "edep_1500_new.csv", "edep_2000_new.csv", "edep_2500_new.csv",
+#              "edep_3000_new.csv", "edep_3500_new.csv"]
+# energies = [0.5, 1, 1.5, 2, 2.5, 3, 3.5]
+# percentages = []
+#
+# for file in filenames:
+#     percentages.append(percentage_detected(file))
+#
+# plt.plot(energies, percentages, '-')
+# plt.xlabel('neutron energy')
+# plt.ylabel('% detected')
+# plt.title('percentage of detected events as a function of initial neutron energy')
+# plt.show()
+
+# for R in Rs:
+#     for L_eff in L_effs:
+#         # creating new arrays which are smeared according to gaussian dist with sigma around original array
+#         num_up_new = []
+#         num_down_new = []
+#         for k in range(len(num_up)):
+#             num_up_new.append(np.random.normal(num_up[k], R * np.sqrt(num_up[k])))
+#             num_down_new.append(np.random.normal(num_down[k], R * np.sqrt(num_down[k])))
+#         num_up_new = np.array(num_up_new)
+#         num_down_new = np.array(num_down_new)
+#
+#         # convolution with a gaussian to account for the gain fluctuation of the PMTs
+#         # gaussian = [np.exp(-(num_up_new[m] / (0.4 * num_up_new[m])) ** 2 / 2) for m in range(len(num_up_new))]
+#         # num_up_new = np.convolve(num_up_new, gaussian, mode="full")
+#         # num_down_new = np.convolve(num_down_new, gaussian, mode="full")
+#
+#         h1, bins1 = np.histogram(num_up_new * L_eff, np.arange(0, max(num_up), 2))
+#         # plt.step((bins1[1:] + bins1[:-1]) / 2, h1, where='mid', label='number of photons absorbed in top PMT')
+#
+#         h2, bins2 = np.histogram(num_down_new * L_eff, np.arange(0, max(num_up), 2))
+#         # plt.step((bins2[1:] + bins2[:-1]) / 2, h2, where='mid', label='number of photons absorbed in bottom PMT')
+#         #
+#         # plt.xlabel('number of photons')
+#         # plt.ylabel('number of events')
+#         # plt.title('number of photons absorbed in bottom and top PMT per event')
+#         # plt.legend(loc='upper right', fontsize=8)
+#         # plt.show()
+#
+#         h = (h1 + h2) / 2
+#         # bin size should be roughly 2
+#         I_katom = sum(counts[i] * (num_photons[i + 1] - num_photons[i]) for i in range(len(counts) - 1)) + 2 * counts[
+#             -1]
+#         # I_katom = sum(counts) * 2
+#         h = h / (2 * sum(h)) * I_katom
+#         # print(sum(h))
+#         # print(sum(counts))
+#         chi_square = sum(((counts[i] - h[i]) ** 2) / (errs[i] ** 2 + h[i]) for i in range(len(counts)))
+#         chi_squares[i][j] = chi_square
+#         if chi_square < min_chi_square:
+#             min_chi_square = chi_square
+#             min_h = h
+#             min_bins = bins2
+#             best_scale = L_eff
+#             best_sigma = R
+#         # counts = counts / sum(counts)
+#         i += 1
+#     j += 1
+#     i = 0
+
+# fit with curve_fit
+# bins1_centers = (bins1[1:] + bins1[:-1]) / 2
+#
+# start = 1
+# end = 21
+# parameters = curve_fit(gauss, bins1_centers[start:end], h[start:end],
+#                        p0=[4, 25, 22, 6])
+# light_yield_n = parameters[0][2]
+# err_n = parameters[0][3]
+# print("gaussian H + A * np.exp(-(x - x0) ** 2 / (2 * sigma ** 2))\n with params H = ", parameters[0][0], ", A = ",
+#       parameters[0][1], ", $\mu$ = ", parameters[0][2], ", $\sigma$ = ", parameters[0][3])
+#
+# xs = bins1_centers[start:end]
+# plt.plot(xs, gauss(xs, parameters[0][0], parameters[0][1], parameters[0][2], parameters[0][3]), '--',
+#          label='Fit result', )
+# plt.step(bins1_centers, h, where='mid', label='number of photons absorbed in PMT')
+# plt.legend()
+# plt.show()
+#
+# print("chisquare = ",
+#       chisquare(h[start:end], gauss(xs, parameters[0][0], parameters[0][1], parameters[0][2], parameters[0][3]))[
+#           0] / len(h))
+# print("pvalue = ",
+#       chisquare(h[start:end], gauss(xs, parameters[0][0], parameters[0][1], parameters[0][2], parameters[0][3]))[1])
+
+# electron_energies = np.array([60, 122, 341, 478, 1061])
+# light_yields = np.array([159.17, 341.56, 1072.94, 1479.63, 3328.27])
+# light_yields_err = np.array([13.60, 22.75, 47.08, 53.347, 91.525])
+#
+# # popt = curve_fit(line, electron_energies, light_yields, sigma=light_yields_err, p0=[3, 0])
+# popt = curve_fit(lin, electron_energies, light_yields, sigma=light_yields_err, p0=3)
+# print(popt)
+#
+# a = popt[0][0]
+# da = np.sqrt(popt[1][0][0])
+# # b = popt[0][1]
+# # db = np.sqrt(popt[1][1][1])
+#
+# # print("line equation = ", a, " (+- ", da, ") x", " + ", b, " (+- ", db, ")")
+# print("line equation = ", a, " (+- ", da, ") x")
+#
+# print("chisquare = ",
+#       sum(((light_yields[i] - lin(electron_energies[i], a)) ** 2) / lin(electron_energies[i], a) for i in
+#           range(len(electron_energies))) / len(electron_energies))
+#
+# plt.errorbar(electron_energies, light_yields, yerr=light_yields_err, fmt='.', capthick=3)
+#
+# plt.plot(electron_energies, lin(electron_energies, a), '--')
+# plt.grid()
+# plt.xlabel("Electron Energies [keV]")
+# plt.ylabel("Light Yield [a.u.]")
+# plt.title("Light yield as a function of electron recoil energy")
+# plt.show()
+#
+# popt = np.array(curve_fit(lin, electron_energies, light_yields, sigma=light_yields_err))
+# pcov = popt[1]
+# a = popt[0][0]
+# # da = np.sqrt(popt[1][0][0])
+# perr = np.sqrt(pcov[0])
+#
+# # prepare confidence level curves
+# nstd = 3.  # to draw 3-sigma intervals
+# popt_up = popt + nstd * perr
+# a_up = popt_up[0][0]
+# popt_dw = popt - nstd * perr
+# a_down = popt_dw[0][0]
+#
+# fit = lin(electron_energies, a)
+# fit_up = lin(electron_energies, a_up)
+# fit_dw = lin(electron_energies, a_down)
+#
+# # plot
+# fig, ax = plt.subplots(1)
+# plt.rcParams['xtick.labelsize'] = 18
+# plt.rcParams['ytick.labelsize'] = 18
+# plt.rcParams['font.size'] = 20
+# plt.errorbar(electron_energies, light_yields, yerr=light_yields_err, fmt='.', capthick=3)
+#
+# plt.xlabel("Electron Energies [keV]")
+# plt.ylabel("Light Yield [a.u.]")
+# plt.title("Light yield as a function of electron recoil energy")
+# plt.plot(electron_energies, fit, '--', lw=2, label='best fit curve')
+# # plt.plot(electron_energies, lin(electron_energies, a), 'k', lw=2, label='True curve')
+# ax.fill_between(electron_energies, fit_up, fit_dw, alpha=.25, label='3 - sigma interval')
+# plt.legend(loc='lower right', fontsize=18)
+# plt.xticks(np.arange(0, 1200, 100))
+# plt.grid()
+# plt.show()
+#
+#
+# # L_eff(light_yield_n, err_n, line(16.4, a, b), da * 16.4 + db, 16.4)
+# # L_eff(light_yield_n, err_n, lin(16.4, a), da * 16.4, 16.4)
+#
+# # calibrated vs 60keV Photo-peak
+# # L_eff(11.3235, 3.2618, 159.1653, np.sqrt(13.59777 ** 2 + (da * 60) ** 2), 11.5, 2.1)
+# # L_eff(13.8651, 3.77856, 159.1653, np.sqrt(13.59777 ** 2 + (da * 60) ** 2), 16.4, 2.3)
+# # L_eff(18.309, 4.769, 159.1653, np.sqrt(13.59777 ** 2 + (da * 60) ** 2), 28.5, 3.1)
+# # L_eff(23.108, 5.649, 159.1653, np.sqrt(13.59777 ** 2 + (da * 60) ** 2), 43.4, 3.7)
+# # L_eff(28.097, 6.5, 159.1653, np.sqrt(13.59777 ** 2 + (da * 60) ** 2), 60.5, 4.0)
+# # L_eff(41.344, 7.868, 159.1653, np.sqrt(13.59777 ** 2 + (da * 60) ** 2), 119.5, 4.9)
+#
+# def leff(Nph_n, E_nr):
+#     print("L_eff at E = ", E_nr, " keV is equal to ", (Nph_n / 159.16) * 60 / E_nr)
+#
+#
+# # using pencil beam
+# # leff(11.3, 11.5)
+# # leff(13.9, 16.4)
+# # leff(18.3, 28.5)
+# # leff(23.1, 43.3)
+# # leff(28.1, 60.5)
+# # leff(41.3, 119.5)
+#
+#
+# # calibrated vs equivalent er energy, using pencil beam
+# # L_eff(11.3235, 3.2618, 3.067 * 11.5, da * 11.5, 11.5, 2.1)
+# # L_eff(13.8651, 3.77856, 3.067 * 16.4, da * 16.4, 16.4, 2.3)
+# # L_eff(18.309, 4.769, 3.067 * 28.5, da * 28.5, 28.5, 3.1)
+# # L_eff(23.108, 5.649, 3.067 * 43.4, da * 43.3, 43.4, 3.7)
+# # L_eff(28.097, 6.5, 3.067 * 60.5, da * 60.5, 60.5, 4.0)
+# # L_eff(41.344, 7.868, 3.067 * 119.5, da * 119.5, 119.5, 4.9)
+#
+# # light yield using beam with angular separation, calibrated vs 60keV Photo-peak
+# print("using beam with angular separation:\n")
+# L_eff(10.18, 4.1, 159.1653, np.sqrt(13.59777 ** 2 + (da * 60) ** 2), 11.5, 2.1)
+# L_eff(13.14, 6.18, 159.1653, np.sqrt(13.59777 ** 2 + (da * 60) ** 2), 16.4, 2.3)
+# L_eff(17.67, 10, 159.1653, np.sqrt(13.59777 ** 2 + (da * 60) ** 2), 28.5, 3.1)
+# L_eff(22.51, 16.13, 159.1653, np.sqrt(13.59777 ** 2 + (da * 60) ** 2), 43.4, 3.7)
+# L_eff(26.22, 12.24, 159.1653, np.sqrt(13.59777 ** 2 + (da * 60) ** 2), 60.5, 4.0)
+# L_eff(39.34, 26.53, 159.1653, np.sqrt(13.59777 ** 2 + (da * 60) ** 2), 119.5, 4.9)
+
+# L_effs = np.linspace(0.2, 0.4, 100)
+# Rs = np.linspace(1, 7, 100)
+# L_eff_chi_square("../Scintillation_Data/nucleus_recoil_scint/lightYield_60_wide.csv",
+#                  "../Scintillation_Data/Creus/60deg_data.csv", "../Scintillation_Data/Creus/60deg_err_down.csv",
+#                  "../Scintillation_Data/Creus/60deg_err_up.csv", 25, 135, 3.75, L_effs, Rs, 60, 5, vmax=300)
+
+# dat = pd.read_csv("../Scintillation_Data/nucleus_recoil_scint/lightYield_90_wide.csv")
+# recoil_energies = dat.nucleusRecoilEnergy
+# h, bins = np.histogram(recoil_energies, 100)
+# plt.step((bins[1:] + bins[:-1]) / 2, h)
+# plt.xlabel('recoil energy [keV]')
+# plt.ylabel('counts')
+# plt.show()
+
+# bins_centers = (bins[1:] + bins[:-1]) / 2
+#
+# start = 27
+# end = 35
+# parameters = curve_fit(gauss, bins_centers[start:end], h[start:end],
+#                        p0=[5, 35, 120, 6])
+# light_yield_n = parameters[0][2]
+# err_n = parameters[0][3]
+# print("gaussian H + A * np.exp(-(x - x0) ** 2 / (2 * sigma ** 2))\n with params H = ", parameters[0][0], ", A = ",
+#       parameters[0][1], ", $\mu$ = ", parameters[0][2], ", $\sigma$ = ", parameters[0][3])
+#
+# xs = bins_centers[start:end]
+# plt.plot(xs, gauss(xs, parameters[0][0], parameters[0][1], parameters[0][2], parameters[0][3]), '--',
+#          label='Fit result', )
+# plt.step(bins_centers, h, where='mid', label='number of photons absorbed in PMT')
+# plt.legend()
+# plt.show()
+#
+# print("chisquare = ",
+#       chisquare(h[start:end], gauss(xs, parameters[0][0], parameters[0][1], parameters[0][2], parameters[0][3]))[
+#           0] / len(h))
+# print("pvalue = ",
+#       chisquare(h[start:end], gauss(xs, parameters[0][0], parameters[0][1], parameters[0][2], parameters[0][3]))[1])
+
+# 1 is Aviv
+# xs1 = [27.65, 42.78, 60.5, 120]
+# dx1 = [4.04, 4.09, 5.68, 5.28]
+# ys1 = [0.303, 0.333, 0.341, 0.323]
+# dy1_up = [0.0197, 0.0524, 0.052, 0.0685]
+# dy1_down = [0.081, 0.031, 0.055, 0.0372]
+# dy1 = np.array([dy1_down, dy1_up])
+#
+# # 2 is Creus
+# xs2 = [28.5, 43.4, 60.5, 119.5]
+# dx2 = [5.2, 6.0, 7.1, 7.7]
+# ys2 = [0.285, 0.294, 0.283, 0.301]
+# dy2 = [0.014, 0.023, 0.018, 0.019]
+#
+# plt.errorbar(xs1, ys1, xerr=dx1, yerr=dy1, color='b', ecolor='b', fmt='-', label='Aviv')
+# plt.errorbar(xs2, ys2, xerr=dx2, yerr=dy2, color='grey', ecolor='grey', fmt='-', label='Creus et al.')
+# plt.xlabel('nuclear recoil energy[keV]', fontsize=15)
+# plt.ylabel('L_eff', fontsize=15)
+# plt.title('$L_{eff}$ as a function of nuclear recoil energy', fontsize=15)
+# plt.legend()
+# plt.show()
