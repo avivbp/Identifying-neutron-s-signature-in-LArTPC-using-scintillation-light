@@ -1813,3 +1813,148 @@ from functions import *
 # plt.title('$L_{eff}$ as a function of nuclear recoil energy', fontsize=15)
 # plt.legend()
 # plt.show()
+
+# dat = pd.read_csv('../neutronEscapeEnergy.csv')
+# escape_energy_keV = dat.neutronEscapeEnergy
+# nPrime = dat.nPrime
+#
+# tot_events = len(escape_energy_keV)
+# print("number of events = ", tot_events)
+# escape_energy_keV = escape_energy_keV[escape_energy_keV > 0]
+# print("percentage of events with neutrons escaping = ", 100 * len(escape_energy_keV) / tot_events)
+# h, bins = np.histogram(escape_energy_keV, np.arange(-5, 550, 5))
+# plt.step((bins[1:] + bins[:-1]) / 2, h, where='mid')
+# # plt.hist(escape_energy_keV, 100)
+# plt.xlabel('energy[keV]', fontsize=15)
+# plt.ylabel('count', fontsize=15)
+# plt.yscale('log')
+# plt.xticks(np.arange(0, 500, 20))
+# plt.title('5.3MeV neutrons escape energy starting from center of DUNE', fontsize=15)
+# plt.show()
+#
+# escape_energy_keV = escape_energy_keV[escape_energy_keV < 70]
+# escape_energy_keV = escape_energy_keV[escape_energy_keV > 40]
+# print("number of escaped neutrons around 60keV = ", len(escape_energy_keV))
+
+# dat = pd.read_csv('../energyTransfer.csv')
+# eventIDs = dat.eventID
+# Ar_recoil_transfer = dat.ArRecoil
+# gammas_transfer = dat.gammas
+# inelasticRecoilTransfer = dat.inelasticRecoilTransfer
+
+# theSum = Ar_recoil_transfer + gammas_transfer + inelasticRecoilTransfer
+# plt.plot(eventIDs, theSum, '.')
+# plt.show()
+
+# h, bins = np.histogram(Ar_recoil_transfer, np.arange(-0.05, 5.3, 0.05))
+# plt.step((bins[1:] + bins[:-1]) / 2, h, where='mid', label='elastic interaction - energy transfer to nuclear recoils')
+#
+# h, bins = np.histogram(gammas_transfer, np.arange(-0.05, 5.3, 0.05))
+# plt.step((bins[1:] + bins[:-1]) / 2, h, where='mid', label='sum of energy of de-excitation $\gamma$')
+#
+# h, bins = np.histogram(inelasticRecoilTransfer, np.arange(-0.05, 5.3, 0.05))
+# plt.step((bins[1:] + bins[:-1]) / 2, h, where='mid', label='energy transfer to nuclear recoils in inelastic process')
+# plt.xlabel('energy transfer[MeV]',fontsize=15)
+# plt.ylabel('count',fontsize=15)
+# # plt.yscale('log')
+# plt.title('histogram of energy transfer contributions',fontsize=15)
+# plt.legend()
+# plt.show()
+
+# dat = pd.read_csv("../Scintillation_Data/scint_yield_checks/scintDist_976keV_electron_0.414.csv")
+# num = dat.numPhotons
+# h, bins = np.histogram(num, np.linspace(0, 51300, 500), density=True)
+# bins_centers = (bins[1:] + bins[:-1]) / 2
+# plt.step(bins_centers, h, label='976 keV electron, 0.414 $[\\frac{mm}{MeV}]$ Birks constant')
+# ymax = 1.1 * np.max(h)
+# plt.plot([4.41 * 10 ** 4, 4.41 * 10 ** 4], [0, ymax], '--b')
+#
+# dat = pd.read_csv("../Scintillation_Data/scint_yield_checks/scintDist_976keV_electron_0.696.csv")
+# num = dat.numPhotons
+# h, bins = np.histogram(num, np.linspace(0, 51300, 500), density=True)
+# bins_centers = (bins[1:] + bins[:-1]) / 2
+# plt.step(bins_centers, h, label='976 keV electron, 0.696 $[\\frac{mm}{MeV}]$ Birks constant')
+# ymax = 1.1 * np.max(h)
+# plt.plot([4.175 * 10 ** 4, 4.175 * 10 ** 4], [0, ymax], '--', color='orange')
+#
+# dat = pd.read_csv("../Scintillation_Data/scint_yield_checks/scintDist_976keV_electron_0.158.csv")
+# num = dat.numPhotons
+# h, bins = np.histogram(num, np.linspace(0, 51300, 500), density=True)
+# bins_centers = (bins[1:] + bins[:-1]) / 2
+# plt.step(bins_centers, h, label='976 keV electron, 0.158 $[\\frac{mm}{MeV}]$ Birks constant')
+# ymax = 1.1 * np.max(h)
+# plt.plot([4.729 * 10 ** 4, 4.729 * 10 ** 4], [0, ymax], '--g')
+#
+# dat = pd.read_csv("../Scintillation_Data/scint_yield_checks/scintDist_976keV_electron_0.89.csv")
+# num = dat.numPhotons
+# h, bins = np.histogram(num, np.linspace(0, 51300, 500), density=True)
+# bins_centers = (bins[1:] + bins[:-1]) / 2
+# plt.step(bins_centers, h, label='976 keV electron, 0.89 $[\\frac{mm}{MeV}]$ Birks constant')
+# ymax = 1.1 * np.max(h)
+# xmax = bins[np.where(h == np.max(h))[0][0]]
+# plt.plot([xmax,xmax], [0, ymax], '--r')
+#
+# plt.legend()
+# plt.xlabel('number of optical photons')
+# plt.ylabel('frequency')
+# plt.title('number of optical photons produced by 976 keV e-')
+# plt.show()
+# #
+# dat = pd.read_csv("../energy_diff.csv")
+# energy = dat.energy * 1000
+# plt.hist(energy, 100)
+# plt.xlabel("energy [eV]")
+# plt.ylabel('count')
+# plt.title("remaining energy after photoelectric effect caused by 59.5 keV primary $\gamma$")
+# plt.show()
+# #
+# dat = pd.read_csv("../phot_eKin.csv")
+# energies = dat.electron_eKin
+# plt.hist(energies)
+# plt.show()
+#
+# dat = pd.read_csv("../Scintillation_Data/scint_yield_checks/scintDist_1MeV_gamma_infinite_detector.csv")
+# num_photons = dat.numPhotons
+# num_photons = num_photons[num_photons > 0]
+# h, bins = np.histogram(num_photons, np.linspace(0, 51300, 500), density=True)
+# bins_centers = (bins[1:] + bins[:-1]) / 2
+# plt.step(bins_centers, h, label='1 MeV gamma, infinite detector')
+#
+# dat = pd.read_csv("../Scintillation_Data/scint_yield_checks/scintDist_1MeV_electron.csv")
+# num_photons = dat.numPhotons
+# num_photons = num_photons[num_photons > 0]
+# h, bins = np.histogram(num_photons, np.linspace(0, 51300, 500), density=True)
+# bins_centers = (bins[1:] + bins[:-1]) / 2
+# plt.step(bins_centers, h, label='1 MeV electron')
+#
+# plt.legend()
+# plt.show()
+
+# dat = pd.read_csv("../Scintillation_Data/scint_yield_checks/scintDist_60keV_gamma.csv")
+# num_photons = dat.numPhotons
+# num_photons = num_photons[num_photons > 0]
+# h1, bins1 = np.histogram(num_photons, 100, density=True)
+# bins_centers = (bins1[1:] + bins1[:-1]) / 2
+# plt.step(bins_centers, h1, label='60 keV $\gamma$ , infinite detector')
+# ymax1 = 1.1 * np.max(h1)
+# xmax1 = bins1[np.where(h1 == np.max(h1))[0][0]]
+# plt.plot([xmax1, xmax1], [0, ymax1], '--', color='blue')
+#
+# dat = pd.read_csv("../Scintillation_Data/scint_yield_checks/scintDist_60keV_electron.csv")
+# num_photons = dat.numPhotons
+# num_photons = num_photons[num_photons > 0]
+# h, bins = np.histogram(num_photons, 100, density=True)
+# bins_centers = (bins[1:] + bins[:-1]) / 2
+# plt.step(bins_centers, h, label='60 keV electron , infinite detector')
+# ymax = 1.1 * np.max(h)
+# xmax = bins[np.where(h == np.max(h))[0][0]]
+# plt.plot([xmax, xmax], [0, ymax], '--', color='orange')
+# xticks = list(np.linspace(0, 2000, 11))
+# xticks.extend([xmax, xmax1])
+# xticks.remove(2000)
+# xticks.append(2150)
+# plt.xticks(xticks)
+# plt.ylim([0, 0.0031])
+# plt.legend()
+# plt.show()
+
