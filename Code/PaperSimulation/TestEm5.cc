@@ -84,7 +84,7 @@ int main(int argc,char** argv) {
 
   //G4VModularPhysicsList* physicsList = new FTFP_BERT;
   G4VModularPhysicsList* physicsList = new QGSP_BERT_HP;
-  physicsList->ReplacePhysics(new G4EmStandardPhysics_option4());
+  //physicsList->ReplacePhysics(new G4EmStandardPhysics_option4());
   
   G4OpticalPhysics* opticalPhysics = new G4OpticalPhysics();
   auto opticalParams = G4OpticalParameters::Instance();
