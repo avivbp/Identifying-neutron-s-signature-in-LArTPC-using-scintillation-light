@@ -433,3 +433,40 @@ def L_eff_chi_square(light_yield_filename, data_filename, err_down_filename, err
         scatter_angle) + " degree neutron scatter off LAr",
               fontsize=20)
     plt.show()
+
+
+def is_in_arapuca(ypos, zpos, arapuca):
+    if (ypos > arapuca[0][0] and ypos < arapuca[0][1]) and (zpos > arapuca[1][0] and zpos < arapuca[1][1]):
+        return True
+    else:
+        return False
+
+
+def is_in_arapucas(ypos, zpos):
+    arapuca0 = [(-38, 37), (110, 194)]
+    arapuca1 = [(118, 195), (38.7, 110)]
+    arapuca2 = [(-118, -195), (-36.3, 38.7)]
+    arapuca3 = [(37, 118), (-107, -36.3)]
+
+    if is_in_arapuca(ypos, zpos, arapuca0) or is_in_arapuca(ypos, zpos, arapuca1) \
+            or is_in_arapuca(ypos, zpos, arapuca2) or is_in_arapuca(ypos, zpos, arapuca3):
+        return True
+    else:
+        return False
+
+
+def step_from_dist(dists, bins, xlabel, ylabel, title, labels=None, colors=None, yscale=0):
+    if type(dists) == list:
+        for i in range(len(dists)):
+            h, bins2 = np.histogram(dists[i], bins[i])
+            plt.step((bins2[1:] + bins2[:-1]) / 2, h, color=colors[i], label=labels[i])
+    else:
+        h, bins2 = np.histogram(dists, bins)
+        plt.step((bins2[1:] + bins2[:-1]) / 2, h)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    if yscale:
+        plt.yscale('log')
+    plt.title(title)
+    plt.legend()
+    plt.show()
