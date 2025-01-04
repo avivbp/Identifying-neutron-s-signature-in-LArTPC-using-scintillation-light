@@ -4,6 +4,7 @@ import pandas as pd
 from scipy.optimize import curve_fit
 from scipy.stats import poisson
 from scipy.stats import chisquare
+from scipy.integrate import simpson
 
 NUM_PARTICLES = 10 ** 4
 AVOGADRO_NUMBER = 6.022 * 10 ** 23
@@ -161,7 +162,7 @@ def plot_pmts(filename, energy, pp, cut, initial_params, valley=0):
 
     plt.xlabel("number of scintillation photons")
     plt.ylabel('number of events')
-    plt.title("number of scintillation photons absorbed in PMTs following " + str(energy) + "keV $\gamma$")
+    plt.title("number of scintillation photons absorbed in PMTs following " + str(energy) + "keV $\\gamma$")
     plt.legend(loc='upper right', fontsize=5)
     plt.show()
 
@@ -202,7 +203,7 @@ def plot_pmts(filename, energy, pp, cut, initial_params, valley=0):
                                                   sigma))[1])
         print("gaussian H + A * np.exp(-(x - x0) ** 2 / (2 * sigma ** 2))\n with params H = ", parameters[0][0],
               ", A = ",
-              parameters[0][1], ", $\mu$ = ", miu, ", $\sigma$ = ", sigma)
+              parameters[0][1], ", $\\mu$ = ", miu, ", $\\sigma$ = ", sigma)
         print("miu = ", miu, " +- ", np.sqrt(sigma ** 2 + d_sigma ** 2 + d_miu ** 2))
         plt.plot(bins_up_centers,
                  gauss(bins_up_centers, parameters[0][0], parameters[0][1], parameters[0][2], parameters[0][3]),
@@ -241,7 +242,7 @@ def plot_pmts(filename, energy, pp, cut, initial_params, valley=0):
     plt.xlabel("energy deposited [keV]")
     # plt.xlabel("number of photons")
     plt.ylabel("number of events")
-    plt.title("energy deposited by " + str(energy) + "keV $\gamma$ [keV]")
+    plt.title("energy deposited by " + str(energy) + "keV $\\gamma$ [keV]")
     # plt.title("total number of scintillation photons created")
     plt.legend()
     plt.show()
@@ -404,12 +405,12 @@ def L_eff_chi_square(light_yield_filename, data_filename, err_down_filename, err
                extent=[min(L_effs), max(L_effs), min(Rs), max(Rs)],
                aspect='auto', vmax=vmax)
 
-    plt.plot(best_L_eff, best_R, '.', color='black', markersize=10, label='min $\chi^2$')
+    plt.plot(best_L_eff, best_R, '.', color='black', markersize=10, label='min $\\chi^2$')
     plt.errorbar(best_L_eff, best_R, xerr=sigma_L_eff, yerr=sigma_R, color='black',
                  linestyle='')
     # plt.errorbar(best_L_eff, best_R, xerr=sigma2_L_eff, yerr=sigma2_R, color='yellow',
     #              linestyle='')
-    plt.colorbar(label='$\chi^2$')
+    plt.colorbar(label='$\\chi^2$')
     plt.ylabel('R', fontsize=20)
     plt.xlabel('$L_{eff}$', fontsize=20)
     plt.title("chi square map as a function of R and $L_{eff}$ " + " ," + str(
@@ -470,3 +471,129 @@ def step_from_dist(dists, bins, xlabel, ylabel, title, labels=None, colors=None,
     plt.title(title)
     plt.legend()
     plt.show()
+
+
+def plot_numPE(sim_pe, filename_data, filenames_errors=None, xs=None, xslabel=None, ys=None, xlim=None, ylim=None,
+               label=None,
+               gaussian_init_guess=None):
+    if xlim is None:
+        xlim = []
+    exp_data = pd.read_csv(filename_data)
+    pes = exp_data.numPE
+    counts = exp_data.counts
+    binsize = np.average([pes[i + 1] - pes[i] for i in range(len(pes) - 1)])
+    I_tot = simpson(counts, dx=binsize)
+
+    # sim_pe = sim_pe[sim_pe != 0]
+    height, bin = np.histogram(sim_pe, np.arange(np.min(sim_pe), np.max(sim_pe), binsize))
+    avg_bin = np.average([bin[i + 1] - bin[i] for i in range(len(bin) - 1)])
+    area = simpson(height, dx=avg_bin)
+    if area == 0 or len(height < 5):
+        height, bin = np.histogram(sim_pe, np.arange(np.min(sim_pe), np.max(sim_pe), binsize / 2))
+        avg_bin = np.average([bin[i + 1] - bin[i] for i in range(len(bin) - 1)])
+        area = simpson(height, dx=avg_bin)
+    yerror = np.sqrt(height) * I_tot / area
+    height = height * I_tot / area
+    norm = np.max(height) / np.max(counts)
+    yerror = yerror / norm
+    height = height / norm
+    height = np.asarray(height)
+    # print("chi square = ", chisquare(height, ys))
+
+    plt.errorbar((bin[1:] + bin[:-1]) / 2, height, yerr=yerror, fmt='o', markersize=3,
+                 label="Geant4 simulation")
+    if filenames_errors:
+        errors_down = pd.read_csv(filenames_errors[0])
+        errors_up = pd.read_csv(filenames_errors[1])
+        err_up = errors_up.counts - counts
+        err_down = counts - errors_down.counts
+        plt.errorbar(pes, counts, yerr=[err_down, err_up], fmt='o', markersize=3, )
+    else:
+        plt.plot(pes, counts, '.', label="data")
+    plt.xlabel("S1 [pe]")
+    plt.ylabel("counts")
+    if label:
+        plt.title(label)
+    else:
+        plt.title(filename_data.split("/")[-1].split("_")[0])
+    if xlim:
+        plt.xlim(xlim)
+    else:
+        dataMax = np.max(pes)
+        simMax = np.max(sim_pe)
+        plt.xlim([0, 1.2 * np.max([dataMax, simMax])])
+    if ylim:
+        plt.ylim(ylim)
+    else:
+        dataMax = np.max(counts)
+        simMax = np.max(height)
+        plt.ylim([0, np.max([dataMax, simMax]) * 1.2])
+    if xs:
+        for i in range(len(xs)):
+            plt.plot(xs[i], ys, '--', label=xslabel[i])
+    if gaussian_init_guess:
+        bins_center = (bin[1:] + bin[:-1]) / 2
+        parameters = curve_fit(gauss, bins_center, height,
+                               p0=gaussian_init_guess)
+        miu = parameters[0][2]
+        H = parameters[0][0]
+        A = parameters[0][1]
+        d_miu = parameters[1][2][2]
+        sigma = parameters[0][3]
+        d_sigma = parameters[1][3][3]
+        # print("miu = " + str(miu)+" +- " + str(d_miu) +", sigma = " + str(sigma))
+        plt.plot(bins_center, gauss(bins_center, H, A, miu, sigma),
+                 '--',
+                 label='Fit result : $\\mu = $ ' + "{0:.2f}".format(miu) + ", $\\sigma = $ " + "{0:.2f}".format(sigma))
+
+        parameters = curve_fit(gauss, pes, counts,
+                               p0=gaussian_init_guess)
+        miu = parameters[0][2]
+        H = parameters[0][0]
+        A = parameters[0][1]
+        d_miu = parameters[1][2][2]
+        sigma = parameters[0][3]
+        d_sigma = parameters[1][3][3]
+        # print("miu = " + str(miu) + " +- " + str(d_miu) + ", sigma = " + str(sigma))
+        plt.plot(bins_center, gauss(bins_center, H, A, miu, sigma),
+                 '--',
+                 label='Data fit : $\\mu = $ ' + "{0:.2f}".format(miu) + ", $\\sigma = $ " + "{0:.2f}".format(sigma))
+    plt.legend()
+    plt.show()
+    # plt.step((bin[1:] + bin[:-1]) / 2, height,
+    #          label=filename.split("_")[2].split("_")[0] + " $\\frac{mm}{MeV}$ birks, "
+    #                + filename.split("_")[3].split(".")[0] + " cm absLength")
+
+
+def compare_gaussian(filenames, bounds, guesses, num_bins, parameter):
+    mius = []
+    sigmas = []
+    for i in range(len(filenames)):
+        dat = pd.read_csv(filenames[i])
+        param = dat[parameter]
+        param = param[param < bounds[i][1]]
+        param = param[param > bounds[i][0]]
+        h, bins = np.histogram(param, bins=num_bins)
+        bins_center = (bins[1:] + bins[:-1]) / 2
+        parameters = curve_fit(gauss, bins_center, h,
+                               p0=guesses[i])
+        miu = parameters[0][2]
+        H = parameters[0][0]
+        A = parameters[0][1]
+        d_miu = parameters[1][2][2]
+        sigma = parameters[0][3]
+        mius.append(miu)
+        sigmas.append(sigma)
+        d_sigma = parameters[1][3][3]
+        print("miu = " + str(miu) + " +- " + str(d_miu) + ", sigma = " + str(sigma))
+        plt.step(bins_center, h, label='histogram ' + str(i))
+        plt.plot(bins_center, gauss(bins_center, H, A, miu, sigma),
+                 '--',
+                 label='Fit result : $\\mu = $ ' + "{0:.2f}".format(miu) + ", $\\sigma = $ " + "{0:.2f}".format(sigma))
+    plt.xlabel('$N_{PH}$',fontsize=16)
+    plt.ylabel("count",fontsize=16)
+    plt.title("number of photons produced by $\\gamma$ rays with different energies",fontsize=16)
+    plt.legend(loc='best')
+    plt.show()
+    # np.save("../current/mius.npy", mius)
+    # np.save("../current/sigmas.npy", sigmas)
