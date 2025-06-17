@@ -1,3 +1,5 @@
+from collections import Counter
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -590,10 +592,207 @@ def compare_gaussian(filenames, bounds, guesses, num_bins, parameter):
         plt.plot(bins_center, gauss(bins_center, H, A, miu, sigma),
                  '--',
                  label='Fit result : $\\mu = $ ' + "{0:.2f}".format(miu) + ", $\\sigma = $ " + "{0:.2f}".format(sigma))
-    plt.xlabel('$N_{PH}$',fontsize=16)
-    plt.ylabel("count",fontsize=16)
-    plt.title("number of photons produced by $\\gamma$ rays with different energies",fontsize=16)
+    plt.xlabel('$N_{PH}$', fontsize=16)
+    plt.ylabel("count", fontsize=16)
+    plt.title("number of photons produced by $\\gamma$ rays with different energies", fontsize=16)
     plt.legend(loc='best')
     plt.show()
     # np.save("../current/mius.npy", mius)
     # np.save("../current/sigmas.npy", sigmas)
+
+
+def expo(a, miu, x):
+    return a * np.exp(-x / miu)
+
+
+def plot_prompt_fraction_graph(filename, particle, use_name=False):
+    df = pd.read_csv(filename)
+    #
+    # times = df.tAbsorbed
+    # events = df.eventID
+    # print(times)
+
+    # Parameters
+    bin_width = 1  # nanoseconds
+    prompt_window = (-20, 30)
+
+    # Prepare result
+    prompt_fractions = {}
+
+    time_cap = 10000000
+    # Group by event
+    for event_id, group in df.groupby('eventID'):
+        times = group['tAbsorbed'].values
+        times = np.array(times)
+        times = times[times < time_cap]
+
+        # Create histogram
+        min_time = times.min()
+        max_time = times.max()
+        if type(max_time) == str:
+            prompt_fractions[event_id] = (np.nan, 0)
+            continue
+        bins = np.arange(min_time, max_time + bin_width, bin_width)
+        hist, bin_edges = np.histogram(times, bins=bins)
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+        # Find peak
+        try:
+            peak_index = np.argmax(hist)
+        except ValueError:
+            prompt_fractions[event_id] = (np.nan, 0)
+            continue
+        peak_time = bin_centers[peak_index]
+
+        # Integration windows
+        prompt_start = peak_time + prompt_window[0]
+        prompt_end = peak_time + prompt_window[1]
+
+        # Compute integrals
+        in_prompt = (bin_centers >= prompt_start) & (bin_centers <= prompt_end)
+        in_total = (bin_centers >= prompt_start)
+
+        # Simpson integration
+        if np.sum(in_prompt) >= 2 and np.sum(in_total) >= 2:  # Simpson requires at least 2 intervals
+            numerator = simpson(hist[in_prompt], x=bin_centers[in_prompt])
+            denominator = simpson(hist[in_total], x=bin_centers[in_total])
+            pf = numerator / denominator if denominator > 0 else np.nan
+            prompt_fractions[event_id] = (pf, denominator)
+        else:
+            pf = np.nan
+            prompt_fractions[event_id] = (pf, 0)
+
+    event_ids = []
+    total_integral = []
+    prompt_fraction_vals = []
+
+    for event_id, group in df.groupby('eventID'):
+        total = len(group)
+        pf = prompt_fractions[event_id]
+        if not np.isnan(pf[0]):
+            event_ids.append(event_id)
+            total_integral.append(pf[1])
+            prompt_fraction_vals.append(pf[0])
+
+    # 2D scatter plot
+    fig = plt.figure(figsize=(8, 6))
+    plt.scatter(prompt_fraction_vals, total_integral, alpha=0.6, color='navy', edgecolor='k')
+    plt.ylabel("Total integral [a.u]",fontsize=20)
+    plt.xlabel("Prompt Fraction",fontsize=20)
+    plt.grid(True)
+    plt.tight_layout()
+    if use_name:
+        yields = filename.split("/")[2].split('\\')[1]
+        s = filename.split("/")[2].split('\\')[3].split("_")
+        decay_times = filename.split("/")[2].split('\\')[2]
+        name = "prompt_fraction_vs_tot_integral_" + yields + "_" + s[1] + "_" + s[2].split(".")[
+            0] + "_" + decay_times + ".png"
+        plt.title(
+            "Prompt Fraction Histogram: " + particle + ", " + yields + ", " + decay_times + ", " + s[2].split(".")[
+                0], fontsize=10)
+    else:
+        name = particle
+        plt.title(name, fontsize=20)
+    # print(name)
+    fig.savefig(f"pf_bytype{particle}.png", dpi=300,bbox_inches='tight')
+    plt.close(fig)
+    return prompt_fraction_vals,total_integral
+    # plt.show()
+
+
+def plot_prompt_fraction_grid(file_list, particle_list, use_name=False):
+    # Parameters
+    bin_width = 10  # nanoseconds
+    prompt_window = (-300, 500)
+
+    import os
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from scipy.integrate import simpson
+
+    n_files = len(file_list)
+    n_cols = 2
+    n_rows = (n_files + n_cols - 1) // n_cols
+
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(5 * n_cols, 4 * n_rows))
+    axes = axes.flatten()
+
+    for i, filename in enumerate(file_list):
+        df = pd.read_csv(filename)
+        prompt_fractions = {}
+
+        for event_id, group in df.groupby('eventID'):
+            times = group['tAbsorbed'].values
+            if isinstance(times.max(), str) or times.max() > 1e7:
+                prompt_fractions[event_id] = (np.nan, 0)
+                continue
+
+            bins = np.arange(times.min(), times.max() + bin_width, bin_width)
+            hist, bin_edges = np.histogram(times, bins=bins)
+            bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+            try:
+                peak_time = bin_centers[np.argmax(hist)]
+            except ValueError:
+                prompt_fractions[event_id] = (np.nan, 0)
+                continue
+
+            prompt_start = peak_time + prompt_window[0]
+            prompt_end = peak_time + prompt_window[1]
+            in_prompt = (bin_centers >= prompt_start) & (bin_centers <= prompt_end)
+            in_total = (bin_centers >= prompt_start)
+
+            if np.sum(in_prompt) >= 2 and np.sum(in_total) >= 2:
+                numerator = simpson(hist[in_prompt], x=bin_centers[in_prompt])
+                denominator = simpson(hist[in_total], x=bin_centers[in_total])
+                pf = numerator / denominator if denominator > 0 else np.nan
+                prompt_fractions[event_id] = (pf, denominator)
+            else:
+                prompt_fractions[event_id] = (np.nan, 0)
+
+        prompt_vals = []
+        total_integrals = []
+        for eid, (pf, total) in prompt_fractions.items():
+            if not np.isnan(pf):
+                prompt_vals.append(pf)
+                total_integrals.append(total)
+
+        ax = axes[i]
+        ax.scatter(prompt_vals, total_integrals, alpha=0.6, color='navy', edgecolor='k')
+        if use_name:
+            yields = filename.split("/")[2].split('\\')[1]
+            decay_times = filename.split("/")[2].split('\\')[2]
+            ax.set_title(
+                "particle = " +
+                os.path.basename(filename).split("_")[1] + ", det size = " + os.path.basename(filename).split("_")[
+                    2].split(".")[0] + ", yield ratio = " + yields + ", decay times = " + decay_times,
+                fontsize=8)
+        else:
+            side = len(filename.split("/")[5].split("_")) == 4
+            # ax.set_title("particle = " + particle_list[i] + ", yield ratio = " + filename.split("/")[3] + ", decay times = " +
+            #              filename.split("/")[4] + ", det size = " + filename.split("/")[5].split("_")[
+            #                  2] + ", 1side = " + str(side), fontsize=7)
+            ax.set_title(f"$\\{particle_list[i]}$" if particle_list[i]=="mu" else particle_list[i],fontsize=35)
+        ax.set_xlabel("Prompt Fraction",fontsize=15)
+        ax.set_ylabel("Total integral [a.u]",fontsize=15)
+        # ax.set_xlim([0.4,0.7])
+        # ax.set_ylim([0,sorted(total_integrals)[-7]])
+        ax.grid(True)
+
+    for j in range(i + 1, len(axes)):
+        fig.delaxes(axes[j])
+
+    plt.suptitle("Prompt Fraction vs Total Integral for different particles", fontsize=14)
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
+    plt.savefig("prompt_fraction_grid.png", dpi=300)
+    plt.close(fig)
+
+def discrete_count(distribution):
+    freq = Counter(distribution)
+    total = sum(freq.values())
+    normalized_freq = {k: v / total for k, v in freq.items()}
+    x = sorted(normalized_freq.keys())
+    y = [normalized_freq[k] for k in x]
+    return x,y
+
