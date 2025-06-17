@@ -1,0 +1,91 @@
+/control/verbose 0
+/run/verbose 0
+/event/verbose 0
+/tracking/verbose 0
+/run/initialize
+
+/gun/energy 2.5 MeV
+/mysim/setAbsLength 150 cm
+/run/beamOn 10000
+/mysim/setAbsLength 250 cm
+/run/beamOn 10000
+/mysim/setAbsLength 350 cm
+/run/beamOn 10000
+/mysim/setAbsLength 450 cm
+/run/beamOn 10000
+/mysim/setAbsLength 550 cm
+/run/beamOn 10000
+/mysim/setAbsLength 650 cm
+/run/beamOn 10000
+/mysim/setAbsLength 1000 cm
+/run/beamOn 10000
+/mysim/setAbsLength 3000 cm
+/run/beamOn 10000
+/gun/energy 14 MeV
+/mysim/setAbsLength 150 cm
+/run/beamOn 10000
+/mysim/setAbsLength 250 cm
+/run/beamOn 10000
+/mysim/setAbsLength 350 cm
+/run/beamOn 10000
+/mysim/setAbsLength 450 cm
+/run/beamOn 10000
+/mysim/setAbsLength 550 cm
+/run/beamOn 10000
+/mysim/setAbsLength 650 cm
+/run/beamOn 10000
+/mysim/setAbsLength 1000 cm
+/run/beamOn 10000
+/mysim/setAbsLength 3000 cm
+/run/beamOn 10000
+/gun/energy 30 MeV
+/mysim/setAbsLength 150 cm
+/run/beamOn 10000
+/mysim/setAbsLength 250 cm
+/run/beamOn 10000
+/mysim/setAbsLength 350 cm
+/run/beamOn 10000
+/mysim/setAbsLength 450 cm
+/run/beamOn 10000
+/mysim/setAbsLength 550 cm
+/run/beamOn 10000
+/mysim/setAbsLength 650 cm
+/run/beamOn 10000
+/mysim/setAbsLength 1000 cm
+/run/beamOn 10000
+/mysim/setAbsLength 3000 cm
+/run/beamOn 10000
+/gun/energy 35 MeV
+/mysim/setAbsLength 150 cm
+/run/beamOn 10000
+/mysim/setAbsLength 250 cm
+/run/beamOn 10000
+/mysim/setAbsLength 350 cm
+/run/beamOn 10000
+/mysim/setAbsLength 450 cm
+/run/beamOn 10000
+/mysim/setAbsLength 550 cm
+/run/beamOn 10000
+/mysim/setAbsLength 650 cm
+/run/beamOn 10000
+/mysim/setAbsLength 1000 cm
+/run/beamOn 10000
+/mysim/setAbsLength 3000 cm
+/run/beamOn 10000
+/gun/energy 40 MeV
+/mysim/setAbsLength 150 cm
+/run/beamOn 10000
+/mysim/setAbsLength 250 cm
+/run/beamOn 10000
+/mysim/setAbsLength 350 cm
+/run/beamOn 10000
+/mysim/setAbsLength 450 cm
+/run/beamOn 10000
+/mysim/setAbsLength 550 cm
+/run/beamOn 10000
+/mysim/setAbsLength 650 cm
+/run/beamOn 10000
+/mysim/setAbsLength 1000 cm
+/run/beamOn 10000
+/mysim/setAbsLength 3000 cm
+/run/beamOn 10000
