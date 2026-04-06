@@ -292,6 +292,7 @@ def L_eff_chi_square(light_yield_filename, data_filename, err_down_filename, err
                      L_effs, Rs, scatter_angle, bin_size, vmax=300):
     dat = pd.read_csv(light_yield_filename)
 
+    detector = dat.detector
     tot_num_photons = dat.numPhotons
     coincidence_time = dat.coincidenceTime
     num_elastic_sensitive = dat.numElasticSensitive
@@ -299,12 +300,12 @@ def L_eff_chi_square(light_yield_filename, data_filename, err_down_filename, err
     num_down = dat.numDown
     scattered_inelastic = dat.scatteredInelastically
     external_scatter = dat.scatteredNotSensitive
-    recoil_energies = dat.nucleusRecoilEnergy
+    recoil_energies = np.array(dat.nucleusRecoilEnergy[detector == "A0"])
 
     dat = pd.read_csv(data_filename)
     dat2 = pd.read_csv(err_down_filename)
     dat3 = pd.read_csv(err_up_filename)
-    num_photons = dat.num_photons
+    num_photons = dat.numPE
     counts = dat.counts
     errs_down = counts - dat2.counts
     errs_up = dat3.counts - counts
@@ -344,8 +345,9 @@ def L_eff_chi_square(light_yield_filename, data_filename, err_down_filename, err
 
             h, bins = np.histogram(new_energies, np.arange(fit_start, max(new_energies), bin_size))
             # change h and bins to end on the last bin in the fit
-            h = h[:(fit_end // bin_size)]
-            bins = bins[:(fit_end // bin_size)]
+            h = h[:(fit_end // bin_size)+1]
+            bins = bins[:(fit_end // bin_size)+1]
+            # print(len(h),len(bins),len(counts))
             # plt.step((bins1[1:] + bins1[:-1]) / 2, h1, where='mid', label='number of photons absorbed in top PMT')
 
             #
@@ -377,6 +379,7 @@ def L_eff_chi_square(light_yield_filename, data_filename, err_down_filename, err
     chi_squares = np.array(chi_squares)
     left_sigma, right_sigma, down_sigma, up_sigma = calc_chi_square_sigma(chi_squares, L_effs, Rs, len(counts),
                                                                           min_chi_square, best_L_eff, best_R, 1)
+    left = down = right = up = 0
     if scatter_angle == 40:
         left = down = 0.081
         right = up = 0.018
@@ -475,93 +478,180 @@ def step_from_dist(dists, bins, xlabel, ylabel, title, labels=None, colors=None,
     plt.show()
 
 
-def plot_numPE(sim_pe, filename_data, filenames_errors=None, xs=None, xslabel=None, ys=None, xlim=None, ylim=None,
-               label=None,
-               gaussian_init_guess=None):
-    if xlim is None:
-        xlim = []
+def plot_numPE(sim_pe, filename_data, filenames_errors=None, xs=None, xslabel=None, ys=None,
+               xlim=None, ylim=None, title=None, gaussian_init_guess=None):
+
+    # Load experimental data
     exp_data = pd.read_csv(filename_data)
-    pes = exp_data.numPE
-    counts = exp_data.counts
-    binsize = np.average([pes[i + 1] - pes[i] for i in range(len(pes) - 1)])
-    I_tot = simpson(counts, dx=binsize)
+    pes = exp_data['numPE']
+    counts = exp_data['counts']
 
-    # sim_pe = sim_pe[sim_pe != 0]
-    height, bin = np.histogram(sim_pe, np.arange(np.min(sim_pe), np.max(sim_pe), binsize))
-    avg_bin = np.average([bin[i + 1] - bin[i] for i in range(len(bin) - 1)])
-    area = simpson(height, dx=avg_bin)
-    if area == 0 or len(height < 5):
-        height, bin = np.histogram(sim_pe, np.arange(np.min(sim_pe), np.max(sim_pe), binsize / 2))
-        avg_bin = np.average([bin[i + 1] - bin[i] for i in range(len(bin) - 1)])
-        area = simpson(height, dx=avg_bin)
-    yerror = np.sqrt(height) * I_tot / area
-    height = height * I_tot / area
-    norm = np.max(height) / np.max(counts)
-    yerror = yerror / norm
-    height = height / norm
-    height = np.asarray(height)
-    # print("chi square = ", chisquare(height, ys))
+    # Estimate bin size and area of experimental data
+    bin_edges_data = np.array(pes)
+    bin_centers_data = (bin_edges_data[1:] + bin_edges_data[:-1]) / 2
+    binsize = np.mean(np.diff(pes))
 
-    plt.errorbar((bin[1:] + bin[:-1]) / 2, height, yerr=yerror, fmt='o', markersize=3,
-                 label="Geant4 simulation")
+    # Histogram the simulation data using same bin width
+    # sim_pe = sim_pe[sim_pe > 0]
+    sim_bins = np.arange(np.min(sim_pe), np.max(sim_pe) + binsize, binsize)
+    sim_counts, sim_bin_edges = np.histogram(sim_pe, bins=sim_bins)
+    sim_bin_centers = (sim_bin_edges[1:] + sim_bin_edges[:-1]) / 2
+    sim_binsize = np.mean(np.diff(sim_bin_edges))
+
+    # Calculate area and normalize simulation histogram to match total area of data
+    area_sim = simpson(sim_counts, dx=sim_binsize)
+    if area_sim == 0 or np.sum(sim_counts > 0) < 5:
+        sim_bins = np.arange(np.min(sim_pe), np.max(sim_pe) + binsize / 2, binsize / 2)
+        sim_counts, sim_bin_edges = np.histogram(sim_pe, bins=sim_bins)
+        sim_bin_centers = (sim_bin_edges[1:] + sim_bin_edges[:-1]) / 2
+        sim_binsize = np.mean(np.diff(sim_bin_edges))
+
+    total_counts_data = np.sum(counts)
+    total_counts_sim = np.sum(sim_counts)
+    sim_yerr = np.sqrt(sim_counts) * (total_counts_data / total_counts_sim)
+    sim_counts = sim_counts * (total_counts_data / total_counts_sim)
+
+    # Plot simulation with error bars
+    plt.errorbar(sim_bin_centers, sim_counts, yerr=sim_yerr, fmt='o', markersize=3, label="the simulation")
+
+    # Plot experimental data
     if filenames_errors:
-        errors_down = pd.read_csv(filenames_errors[0])
-        errors_up = pd.read_csv(filenames_errors[1])
-        err_up = errors_up.counts - counts
-        err_down = counts - errors_down.counts
-        plt.errorbar(pes, counts, yerr=[err_down, err_up], fmt='o', markersize=3, )
+        err_down = pd.read_csv(filenames_errors[0])['counts']
+        err_up = pd.read_csv(filenames_errors[1])['counts']
+        plt.errorbar(pes, counts, yerr=[counts - err_down, err_up - counts], fmt='o', markersize=3, label="Data")
     else:
-        plt.plot(pes, counts, '.', label="data")
-    plt.xlabel("S1 [pe]")
-    plt.ylabel("counts")
-    if label:
-        plt.title(label)
-    else:
-        plt.title(filename_data.split("/")[-1].split("_")[0])
+        plt.plot(pes, counts, '.', label="Data")
+
+    # Axes and labels
+    plt.xlabel("S1 [pe]",fontsize=30)
+    plt.ylabel("counts (normalized)",fontsize=25)
+    plt.tick_params(axis='both', labelsize=15)
+    plt.title(title if title else filename_data.split("/")[-1].split("_")[0],fontsize=20)
+
     if xlim:
         plt.xlim(xlim)
     else:
-        dataMax = np.max(pes)
-        simMax = np.max(sim_pe)
-        plt.xlim([0, 1.2 * np.max([dataMax, simMax])])
+        plt.xlim([0, 1.2 * max(np.max(pes), np.max(sim_pe))])
+
     if ylim:
         plt.ylim(ylim)
     else:
-        dataMax = np.max(counts)
-        simMax = np.max(height)
-        plt.ylim([0, np.max([dataMax, simMax]) * 1.2])
-    if xs:
-        for i in range(len(xs)):
-            plt.plot(xs[i], ys, '--', label=xslabel[i])
-    if gaussian_init_guess:
-        bins_center = (bin[1:] + bin[:-1]) / 2
-        parameters = curve_fit(gauss, bins_center, height,
-                               p0=gaussian_init_guess)
-        miu = parameters[0][2]
-        H = parameters[0][0]
-        A = parameters[0][1]
-        d_miu = parameters[1][2][2]
-        sigma = parameters[0][3]
-        d_sigma = parameters[1][3][3]
-        # print("miu = " + str(miu)+" +- " + str(d_miu) +", sigma = " + str(sigma))
-        plt.plot(bins_center, gauss(bins_center, H, A, miu, sigma),
-                 '--',
-                 label='Fit result : $\\mu = $ ' + "{0:.2f}".format(miu) + ", $\\sigma = $ " + "{0:.2f}".format(sigma))
+        plt.ylim([0, 1.2 * max(np.max(counts), np.max(sim_counts))])
 
-        parameters = curve_fit(gauss, pes, counts,
-                               p0=gaussian_init_guess)
-        miu = parameters[0][2]
-        H = parameters[0][0]
-        A = parameters[0][1]
-        d_miu = parameters[1][2][2]
-        sigma = parameters[0][3]
-        d_sigma = parameters[1][3][3]
-        # print("miu = " + str(miu) + " +- " + str(d_miu) + ", sigma = " + str(sigma))
-        plt.plot(bins_center, gauss(bins_center, H, A, miu, sigma),
-                 '--',
-                 label='Data fit : $\\mu = $ ' + "{0:.2f}".format(miu) + ", $\\sigma = $ " + "{0:.2f}".format(sigma))
-    plt.legend()
+    # Optional vertical lines
+    if xs is not None and ys is not None and xslabel is not None and len(xs) > 0:
+        for xval, label_str in zip(xs, xslabel):
+            plt.plot(xval, ys, '--', label=label_str)
+
+    # Optional Gaussian fits
+    if gaussian_init_guess:
+        try:
+            popt_sim, pcov_sim = curve_fit(gauss, sim_bin_centers, sim_counts, p0=gaussian_init_guess)
+            Hs, As, mus, sigmas = popt_sim
+            plt.plot(sim_bin_centers, gauss(sim_bin_centers, *popt_sim), '--',
+                     label=f'Sim fit: μ={mus:.2f}, σ={sigmas:.2f}')
+        except Exception as e:
+            print(f"Sim fit failed: {e}")
+
+        try:
+            popt_data, pcov_data = curve_fit(gauss, bin_centers_data, counts, p0=gaussian_init_guess)
+            Hd, Ad, mud, sigmad = popt_data
+            plt.plot(bin_centers_data, gauss(bin_centers_data, *popt_data), '--',
+                     label=f'Data fit: μ={mud:.2f}, σ={sigmad:.2f}')
+        except Exception as e:
+            print(f"Data fit failed: {e}")
+
+    plt.legend(fontsize=15)
+    plt.tight_layout()
     plt.show()
+
+# def plot_numPE(sim_pe, filename_data, filenames_errors=None, xs=None, xslabel=None, ys=None, xlim=None, ylim=None,
+#                label=None,
+#                gaussian_init_guess=None):
+#     if xlim is None:
+#         xlim = []
+#     exp_data = pd.read_csv(filename_data)
+#     pes = exp_data.numPE
+#     counts = exp_data.counts
+#     binsize = np.average([pes[i + 1] - pes[i] for i in range(len(pes) - 1)])
+#     I_tot = simpson(counts, dx=binsize)
+#
+#     # sim_pe = sim_pe[sim_pe != 0]
+#     height, bin = np.histogram(sim_pe, np.arange(np.min(sim_pe), np.max(sim_pe), binsize))
+#     avg_bin = np.average([bin[i + 1] - bin[i] for i in range(len(bin) - 1)])
+#     area = simpson(height, dx=avg_bin)
+#     # if area == 0 or len(height) < 5:
+#     #     height, bin = np.histogram(sim_pe, np.arange(np.min(sim_pe), np.max(sim_pe), binsize / 2))
+#     #     avg_bin = np.average([bin[i + 1] - bin[i] for i in range(len(bin) - 1)])
+#     #     area = simpson(height, dx=avg_bin)
+#     yerror = np.sqrt(height) * I_tot / area
+#     # height = height * I_tot / area
+#     # norm = np.max(height) / np.max(counts)
+#     # yerror = yerror / norm
+#     # height = height / norm
+#     # height = np.asarray(height)
+#     # print("chi square = ", chisquare(height, ys))
+#
+#     plt.errorbar((bin[1:] + bin[:-1]) / 2, height, yerr=yerror, fmt='o', markersize=3,
+#                  label="Geant4 simulation")
+#     # if filenames_errors:
+#     #     errors_down = pd.read_csv(filenames_errors[0])
+#     #     errors_up = pd.read_csv(filenames_errors[1])
+#     #     err_up = errors_up.counts - counts
+#     #     err_down = counts - errors_down.counts
+#     #     plt.errorbar(pes, counts, yerr=[err_down, err_up], fmt='o', markersize=3, )
+#     # else:
+#     #     plt.plot(pes, counts, '.', label="data")
+#     plt.xlabel("S1 [pe]")
+#     plt.ylabel("counts")
+#     if label:
+#         plt.title(label)
+#     else:
+#         plt.title(filename_data.split("/")[-1].split("_")[0])
+#     if xlim:
+#         plt.xlim(xlim)
+#     else:
+#         dataMax = np.max(pes)
+#         simMax = np.max(sim_pe)
+#         plt.xlim([0, 1.2 * np.max([dataMax, simMax])])
+#     if ylim:
+#         plt.ylim(ylim)
+#     else:
+#         dataMax = np.max(counts)
+#         simMax = np.max(height)
+#         plt.ylim([0, np.max([dataMax, simMax]) * 1.2])
+#     if xs:
+#         for i in range(len(xs)):
+#             plt.plot(xs[i], ys, '--', label=xslabel[i])
+#     if gaussian_init_guess:
+#         bins_center = (bin[1:] + bin[:-1]) / 2
+#         parameters = curve_fit(gauss, bins_center, height,
+#                                p0=gaussian_init_guess)
+#         miu = parameters[0][2]
+#         H = parameters[0][0]
+#         A = parameters[0][1]
+#         d_miu = parameters[1][2][2]
+#         sigma = parameters[0][3]
+#         d_sigma = parameters[1][3][3]
+#         # print("miu = " + str(miu)+" +- " + str(d_miu) +", sigma = " + str(sigma))
+#         plt.plot(bins_center, gauss(bins_center, H, A, miu, sigma),
+#                  '--',
+#                  label='Fit result : $\\mu = $ ' + "{0:.2f}".format(miu) + ", $\\sigma = $ " + "{0:.2f}".format(sigma))
+#
+#         parameters = curve_fit(gauss, pes, counts,
+#                                p0=gaussian_init_guess)
+#         miu = parameters[0][2]
+#         H = parameters[0][0]
+#         A = parameters[0][1]
+#         d_miu = parameters[1][2][2]
+#         sigma = parameters[0][3]
+#         d_sigma = parameters[1][3][3]
+#         # print("miu = " + str(miu) + " +- " + str(d_miu) + ", sigma = " + str(sigma))
+#         plt.plot(bins_center, gauss(bins_center, H, A, miu, sigma),
+#                  '--',
+#                  label='Data fit : $\\mu = $ ' + "{0:.2f}".format(miu) + ", $\\sigma = $ " + "{0:.2f}".format(sigma))
+#     plt.legend()
+#     plt.show()
     # plt.step((bin[1:] + bin[:-1]) / 2, height,
     #          label=filename.split("_")[2].split("_")[0] + " $\\frac{mm}{MeV}$ birks, "
     #                + filename.split("_")[3].split(".")[0] + " cm absLength")
@@ -614,7 +704,7 @@ def plot_prompt_fraction_graph(filename, particle, use_name=False):
 
     # Parameters
     bin_width = 1  # nanoseconds
-    prompt_window = (-20, 30)
+    prompt_window = (-500, 300)
 
     # Prepare result
     prompt_fractions = {}
@@ -796,3 +886,44 @@ def discrete_count(distribution):
     y = [normalized_freq[k] for k in x]
     return x,y
 
+def apply_mask_to_dataframes(mask,*dfs):
+    return [df[mask] for df in dfs]
+
+def fit_gaussian_from_hist(x_centers, y_counts, min_count=1):
+    """
+    Fit y ≈ H + A * exp(-0.5*((x-μ)/σ)^2) using only bins with y>=min_count.
+    Returns fit dict on success, or None on failure.
+    """
+    mask = (y_counts >= min_count)
+    if mask.sum() < 3:
+        return None
+
+    xf = x_centers[mask]
+    yf = y_counts[mask]
+
+    A0 = float(yf.max())
+    mu0 = float(np.average(xf, weights=yf))
+    sigma0 = float(np.sqrt(np.average((xf - mu0) ** 2, weights=yf)))
+    H0 = 0.0
+
+    try:
+        from scipy.optimize import curve_fit
+        def gauss(x, H, A, mu, sigma):
+            return H + A * np.exp(-0.5 * ((x - mu) / sigma) ** 2)
+
+        popt, pcov = curve_fit(
+            gauss, xf, yf,
+            p0=[H0, A0, mu0, max(sigma0, 1e-6)],
+            maxfev=20000
+        )
+        perr = np.sqrt(np.diag(pcov)) if pcov is not None else [np.nan] * 4
+        H, A, mu, sigma = popt
+        dH, dA, dmu, dsigma = perr
+    except Exception:
+        return None
+
+    return {
+        'H': float(H), 'A': float(A), 'mu': float(mu), 'sigma': abs(float(sigma)),
+        'dH': float(dH), 'dA': float(dA), 'dmu': float(dmu), 'dsigma': float(dsigma),
+        'x': xf, 'y': yf
+    }

@@ -1,3 +1,8 @@
+import glob
+import os
+
+import matplotlib.pyplot as plt
+
 from functions import *
 
 # files = ["free_path_dist_1MeV.csv", "free_path_dist_5MeV.csv", "free_path_dist_10MeV.csv", "free_path_dist_20MeV.csv",
@@ -1471,7 +1476,7 @@ from functions import *
 # plt.xlabel('nuclear recoil energy[keV]')
 # plt.ylabel('L_eff')
 # plt.title('$L_{eff}$ as a function of nuclear recoil energy')
-# plt.legend()
+# plt.legend(fontsize=10)
 # plt.show()
 
 # filename = "../references/Default_Dataset_diff.csv"
@@ -1793,26 +1798,27 @@ from functions import *
 #       chisquare(h[start:end], gauss(xs, parameters[0][0], parameters[0][1], parameters[0][2], parameters[0][3]))[1])
 
 # 1 is Aviv
-# xs1 = [27.65, 42.78, 60.5, 120]
-# dx1 = [4.04, 4.09, 5.68, 5.28]
-# ys1 = [0.303, 0.333, 0.341, 0.323]
-# dy1_up = [0.0197, 0.0524, 0.052, 0.0685]
-# dy1_down = [0.081, 0.031, 0.055, 0.0372]
-# dy1 = np.array([dy1_down, dy1_up])
-#
-# # 2 is Creus
-# xs2 = [28.5, 43.4, 60.5, 119.5]
-# dx2 = [5.2, 6.0, 7.1, 7.7]
-# ys2 = [0.285, 0.294, 0.283, 0.301]
-# dy2 = [0.014, 0.023, 0.018, 0.019]
-#
-# plt.errorbar(xs1, ys1, xerr=dx1, yerr=dy1, color='b', ecolor='b', fmt='-', label='Aviv')
-# plt.errorbar(xs2, ys2, xerr=dx2, yerr=dy2, color='grey', ecolor='grey', fmt='-', label='Creus et al.')
-# plt.xlabel('nuclear recoil energy[keV]', fontsize=15)
-# plt.ylabel('L_eff', fontsize=15)
-# plt.title('$L_{eff}$ as a function of nuclear recoil energy', fontsize=15)
-# plt.legend()
-# plt.show()
+xs1 = [11.69, 27.65, 42.78, 60.5, 120]
+dx1 = [3.04, 4.04, 4.09, 5.68, 5.28]
+ys1 = [0.354, 0.303, 0.333, 0.341, 0.323]
+dy1_up = [0.024, 0.0197, 0.0524, 0.052, 0.0685]
+dy1_down = [0.0626, 0.081, 0.031, 0.055, 0.0372]
+dy1 = np.array([dy1_down, dy1_up])
+
+# 2 is Creus
+xs2 = [11.5, 28.5, 43.4, 60.5, 119.5]
+dx2 = [2.8, 5.2, 6.0, 7.1, 7.7]
+ys2 = [0.386, 0.285, 0.294, 0.283, 0.301]
+dy2 = [0.032, 0.014, 0.023, 0.018, 0.019]
+
+plt.errorbar(xs1, ys1, xerr=dx1, yerr=dy1, color='b', ecolor='b', fmt='-', label='the simulation')
+plt.errorbar(xs2, ys2, xerr=dx2, yerr=dy2, color='grey', ecolor='grey', fmt='-', label='Creus et al.')
+plt.xlabel('nuclear recoil energy[keV]', fontsize=20)
+plt.tick_params(axis='both', labelsize=15)
+plt.ylabel('$L_{eff}$', fontsize=30)
+plt.title('$L_{eff}$ as a function of nuclear recoil energy', fontsize=20)
+plt.legend(fontsize=15)
+plt.show()
 
 # dat = pd.read_csv('../Dune_size_5.3MeV_n_escape_E.csv')
 # escape_energy_keV = dat.neutronEscapeEnergy
@@ -2703,57 +2709,80 @@ from functions import *
 # L = (n + 1) * sum(L_i * W_i) / sum(W_i)
 # print(L)
 
-# xs1 = [4486 for _ in range(100)]
-# xs2 = [10962 for _ in range(100)]
-# ys = np.linspace(0, 1, 100)
-# dat = pd.read_csv("../Darkside_fit/Na22/0.44tpb/numPE_Na22_0.007_3000.csv")
-# numPE = dat.numPE
-# plot_numPE(numPE, "../Darkside_fit/Na22/Na_data.csv", label='Darkside data', xs=[xs1, xs2], ys=ys,
-#            xslabel=['4486 p.e', '10962 p.e'],xlim=[0,15000])
+xs1 = [4486 for _ in range(100)]
+xs2 = [10962 for _ in range(100)]
+ys = np.linspace(0, 1.75, 100)
+dat = pd.read_csv("../Darkside_fit/Na22/0.44tpb/numPE_Na22_0.007_3000.csv")
+numPE = dat.numPE
+plot_numPE(numPE, "../Darkside_fit/Na22/Na_data.csv", title='$^{22} Na$ p.e. spectrum', xs=[xs1, xs2], ys=ys,
+           xslabel=['4486 p.e', '10962 p.e'], xlim=[0, 15000])
+
+dat = pd.read_csv("../Darkside_fit/Co57/0.44tpb/numPE_Co57_0.007_3000.csv")
+numPE = dat.numPE
+xs1 = [1082 for _ in range(100)]
+xs2 = [1045 for _ in range(100)]
+ys = np.linspace(0, 1, 100)
+plot_numPE(numPE, "../Darkside_fit/Co57/Co_data.csv", title='$^{57} Co$ p.e. spectrum', xs=[xs1, xs2], ys=ys,
+           xslabel=['DarkSide photopeak position = 1082 p.e', 'the simulation photopeak position = 1045 p.e'], xlim=[0, 1400])
+
+dat = pd.read_csv("../Darkside_fit/Cs137/0.44tpb/numPE_Cs137_0.007_3000.csv")
+xs1 = [6005 for _ in range(100)]
+xs2 = [5677 for _ in range(100)]
+ys = np.linspace(0, 1, 100)
+numPE = dat.numPE
+plot_numPE(numPE, "../Darkside_fit/Cs137/Cs_data.csv", title='$^{137} Cs$ p.e. spectrum', xs=[xs1, xs2], ys=ys,
+           xslabel=['DarkSide photopeak position = 6005 p.e', 'the simulation photopeak position = 5677 p.e'], xlim=[0, 8000])
 #
-# dat = pd.read_csv("../Darkside_fit/Co57/0.44tpb/numPE_Co57_0.007_3000.csv")
-# numPE = dat.numPE
-# xs1 = [1082 for _ in range(100)]
-# xs2 = [1045 for _ in range(100)]
-# ys = np.linspace(0, 1, 100)
-# plot_numPE(numPE, "../Darkside_fit/Co57/Co_data.csv", label='Darkside data', xs=[xs1, xs2], ys=ys,
-#            xslabel=['1082 p.e', '1045 p.e'],xlim=[0,1400])
-#
-# dat = pd.read_csv("../Darkside_fit/Cs137/0.44tpb/numPE_Cs137_0.007_3000.csv")
-# xs1 = [6005 for _ in range(100)]
-# xs2 = [5677 for _ in range(100)]
-# ys = np.linspace(0, 1, 100)
-# numPE = dat.numPE
-# plot_numPE(numPE, "../Darkside_fit/Cs137/Cs_data.csv", label='Darkside data', xs=[xs1, xs2], ys=ys,
-#            xslabel=['6005 p.e', '5677 p.e'],xlim=[0,8000])
-#
-# dat1 = pd.read_csv("../Darkside_fit/Am/numPE_gamma_0.65_45.csv")
-# num_down = dat1.numReachedDown
-# num_up = dat1.numReachedUp
-# num_tot = dat1.numPE
-# num_tot = num_tot[num_tot != 0]
-# h, bins = np.histogram(num_tot, np.arange(0, 600, 10))
-# dat = pd.read_csv("../Darkside_fit/Am/Am_data.csv")
-# num_pes = list(dat.pe)
-# counts = list(dat.counts)
-# bin_size = 10
-# I_tot = simpson(counts, dx=bin_size)
-# h = h * I_tot / (bin_size * sum(h[0:]))
+dat1 = pd.read_csv("../ARIS_fit/Am/numPE_gamma_0.0595_E_0.03_birks_150_absLen_0.495_TPBEfic.csv")
+num_down = dat1.numReachedDown
+num_up = dat1.numReachedUp
+num_tot = dat1.numPE
+num_tot = num_tot[num_tot != 0]
+h, bins = np.histogram(num_tot, np.arange(0, 600, 10))
+yerr = np.sqrt(h)
+dat = pd.read_csv("../ARIS_fit/Am/Am_data.csv")
+num_pes = list(dat.numPE)
+counts = list(dat.counts)
+bin_size = np.mean(np.diff(num_pes))
+I_tot = simpson(counts, dx=bin_size)
+normalization = I_tot / (bin_size * sum(h[0:]))
+print(normalization)
+h = h * normalization
 # plt.step((bins[1:] + bins[:-1]) / 2, h, color='red',
 #          label='simulation')
-#
-# dat = pd.read_csv("../Darkside_fit/Am/Am_data_errors.csv")
-# errors = dat.counts
-# err_up = errors[0:len(list(num_pes))] - np.array(counts)
-# err_down = np.array(counts) - errors[len(list(num_pes)):]
-# asymmetric_error = np.array(list(zip(err_down, err_up))).T
-# plt.errorbar(num_pes, counts, yerr=asymmetric_error, fmt='.', label='ARIS data')
-# # plt.xlim([0,2000])
-# plt.legend()
-# plt.xlabel('S1 [pe]')
-# plt.ylabel('count')
-# plt.title('Comparison of Am241 scintillation data from Aris experiment vs simulation')
-# plt.show()
+bins_centers = (bins[1:] + bins[:-1]) / 2
+plt.errorbar(bins_centers, h, yerr=yerr * normalization, fmt='.', color='red',
+             label='the simulation')
+xs1 = [375 for _ in range(100)]
+xs2  = [365 for _ in range(100)]
+ys = np.linspace(0, max(h), 100)
+dat = pd.read_csv("../ARIS_fit/Am/Am_data_errors.csv")
+errors = dat.counts
+err_up = errors[0:len(list(num_pes))] - np.array(counts)
+err_down = np.array(counts) - errors[len(list(num_pes)):]
+asymmetric_error = np.array(list(zip(err_down, err_up))).T
+plt.errorbar(num_pes, counts, yerr=asymmetric_error, fmt='.', label='ARIS data')
+plt.plot(xs1,ys,'--',label='the simulation photopeak position = 375 p.e.')
+plt.plot(xs2,ys,'--',label='ARIS photopeak position = 365 p.e.')
+# parameters = curve_fit(gauss, bins_centers, h,
+#                        p0=[0, 3000, 360, 30])
+# miu = parameters[0][2]
+# H = parameters[0][0]
+# A = parameters[0][1]
+# d_miu = parameters[1][2][2]
+# sigma = parameters[0][3]
+# d_sigma = parameters[1][3][3]
+# print("miu = " + str(miu)+" +- " + str(d_miu) +", sigma = " + str(sigma))
+# plt.plot(bins_centers, gauss(bins_centers, H, A, miu, sigma),
+#          '--',
+#          label='Fit result : $\\mu = $ ' + "{0:.2f}".format(miu) + ", $\\sigma = $ " + "{0:.2f}".format(sigma))
+
+# plt.xlim([0,2000])
+plt.legend(fontsize=15)
+plt.xlabel('S1 [pe]', fontsize=20)
+plt.ylabel('counts (normalized)', fontsize=20)
+plt.title('$^{241}$ Am p.e. spectrum', fontsize=20)
+plt.show()
 
 # dat = pd.read_csv("../current/mfp.csv")
 # distance = dat.stepLength
@@ -2823,121 +2852,130 @@ from functions import *
 #     plt.hist(N_ph[N_ph != 0], 70)
 #     plt.show()
 
-# dat = pd.read_csv("../current/lightYield.csv")
-# num_pe = dat.numDown + dat.numUp
-# num_elastic_scatter = dat.numElasticSensitive
-# inelastic_scatter = dat.scatteredInelastically
-# external_scatter = dat.scatteredNotSensitive
-# detector = dat.detector
-# recoil_energy = dat.nucleusRecoilEnergy
-# #
-# num_pe = num_pe[num_elastic_scatter == 1]
-# num_pe = num_pe[inelastic_scatter == 0]
-# num_pe = num_pe[external_scatter == 0]
+dat = pd.read_csv("../Creus_fit/lightYield.csv")
+num_pe = dat.numDown + dat.numUp
+num_elastic_scatter = dat.numElasticSensitive
+inelastic_scatter = dat.scatteredInelastically
+external_scatter = dat.scatteredNotSensitive
+detector = dat.detector
+recoil_energy = dat.nucleusRecoilEnergy
 #
-# N_ph = dat.numPhotonsSensitive
-# num_pe = num_pe[N_ph != 0]
-# N_ph = N_ph[N_ph != 0]
-# N_ph = N_ph[num_elastic_scatter == 1]
-# N_ph = N_ph[inelastic_scatter == 0]
-# N_ph = N_ph[external_scatter == 0]
-#
-# N_ph0 = list(N_ph[detector == "A0"])
-# N_ph1 = list(N_ph[detector == "A1"])
-# N_ph2 = list(N_ph[detector == "A2"])
-# N_ph3 = list(N_ph[detector == "A3"])
-# N_ph4 = list(N_ph[detector == "A4"])
-#
-# A0_pe = list(num_pe[detector == "A0"])
-# A1_pe = list(num_pe[detector == "A1"])
-# A2_pe = list(num_pe[detector == "A2"])
-# A3_pe = list(num_pe[detector == "A3"])
-# A4_pe = list(num_pe[detector == "A4"])
-#
-# As = [A0_pe, A1_pe, A2_pe, A3_pe, A4_pe]
-# N_phs = [N_ph0, N_ph1, N_ph2, N_ph3, N_ph4]
-#
-# energies = [11.5, 28.5, 43.3, 60.5, 119.5]
-# # path_list = []
-# # path = "../current/"
-# # for file in os.listdir(path):
-# #     if not file.startswith("light"):
-# #         path_list.append(path + file)
-# # compare_gaussian(path_list, [[450, 650], [1200, 1600], [1900, 2400], [2700, 3300], [5500, 6500]],
-# #                  [[0, 500, 567, 20], [0, 500, 1415, 40], [0, 500, 2160, 70], [0, 500, 3022, 90], [0, 500, 6048, 160]], 30,
-# #                  "numPhotons")
-# N_ph_star = [567, 1415, 2160, 3022, 6048]
-# L_effs = [0.386, 0.285, 0.294, 0.283, 0.301]
-# mius = np.load("../current/mius.npy")
-# sigmas = np.load("../current/sigmas.npy")
-#
-# for i in range(len(mius)):
-#     plt.errorbar(energies[i], mius[i], yerr=sigmas[i], fmt='.', capsize=5)
-#     plt.ylabel('$N_{PH}$', fontsize=16)
-#     plt.xlabel('energy[$keV_{ee}$]', fontsize=16)
-#     plt.title(
-#         '$\\mu_{PH}^*$ = $E [keV_{ee}]\\times{Scint yield [\\frac{phot}{keV}]\\times{f(kB)}}$ and $\\sigma_{PH}^*$ as a function of photon energy',
-#         fontsize=16)
-#     plt.legend()
-# a, b = np.polyfit(energies, mius, 1)
-# xs = np.linspace(0, 120, 100)
-# ys = a * xs + b
-# plt.plot(xs, ys, '--', linewidth=1)
-# plt.show()
-#
-# for i in range(len(As)):
-#     for j in range(len(As[i])):
-#         N_ph_star = np.random.normal(loc=mius[i], scale=sigmas[i])
-#         As[i][j] = As[i][j] * N_ph_star * L_effs[i] / N_phs[i][j]
-#
-# filename0 = "../Scintillation_Data/Creus/25deg_data.csv"
-# filename1 = "../Scintillation_Data/Creus/40deg_data.csv"
-# filename2 = "../Scintillation_Data/Creus/50deg_data.csv"
-# filename3 = "../Scintillation_Data/Creus/60deg_data.csv"
-# filename4 = "../Scintillation_Data/Creus/90deg_data.csv"
-#
-# data_filenames = [filename0, filename1, filename2, filename3, filename4]
-# errors_filenames = []
-#
-# for i in range(len(data_filenames)):
-#     err_down_file = data_filenames[i].replace("data", "err_down")
-#     err_up_file = data_filenames[i].replace("data", "err_up")
-#     errors_filenames.append((err_down_file, err_up_file))
-#
-# for i in range(len(As)):
-#     # print(As[i])
-#     plot_numPE(As[i], data_filenames[i], filenames_errors=errors_filenames[i])
+num_pe = num_pe[num_elastic_scatter == 1]
+num_pe = num_pe[inelastic_scatter == 0]
+num_pe = num_pe[external_scatter == 0]
 
-# filename = "../ARIS_fit/Na/numPE_gamma_0.511_E_0.03_birks_150_absLen_0.495_TPBEfic.csv"
-# dat = pd.read_csv(filename)
-# numPE = dat.numPE
-# numPE = numPE[numPE != 0]
+N_ph = dat.numPhotonsSensitive
+num_pe = num_pe[N_ph != 0]
+N_ph = N_ph[N_ph != 0]
+N_ph = N_ph[num_elastic_scatter == 1]
+N_ph = N_ph[inelastic_scatter == 0]
+N_ph = N_ph[external_scatter == 0]
+
+N_ph0 = list(N_ph[detector == "A0"])
+N_ph1 = list(N_ph[detector == "A1"])
+N_ph2 = list(N_ph[detector == "A2"])
+N_ph3 = list(N_ph[detector == "A3"])
+N_ph4 = list(N_ph[detector == "A4"])
+
+A0_pe = list(num_pe[detector == "A0"])
+A1_pe = list(num_pe[detector == "A1"])
+A2_pe = list(num_pe[detector == "A2"])
+A3_pe = list(num_pe[detector == "A3"])
+A4_pe = list(num_pe[detector == "A4"])
+
+As = [A0_pe, A1_pe, A2_pe, A3_pe, A4_pe]
+N_phs = [N_ph0, N_ph1, N_ph2, N_ph3, N_ph4]
+
+energies = [11.5, 28.5, 43.3, 60.5, 119.5]
+# path_list = []
+# path = "../current/"
+# for file in os.listdir(path):
+#     if not file.startswith("light"):
+#         path_list.append(path + file)
+# compare_gaussian(path_list, [[450, 650], [1200, 1600], [1900, 2400], [2700, 3300], [5500, 6500]],
+#                  [[0, 500, 567, 20], [0, 500, 1415, 40], [0, 500, 2160, 70], [0, 500, 3022, 90], [0, 500, 6048, 160]], 30,
+#                  "numPhotons")
+N_ph_star = [567, 1415, 2160, 3022, 6048]
+L_effs = [0.386, 0.285, 0.294, 0.283, 0.301]
+mius = np.load("../Creus_fit/mius.npy")
+sigmas = np.load("../Creus_fit/sigmas.npy")
+
+
+plt.errorbar(energies, mius, yerr=sigmas, fmt='.', capsize=5)
+plt.ylabel('$N_{PH}$', fontsize=30)
+plt.xlabel('energy[$keV_{ee}$]', fontsize=20)
+plt.tick_params(axis='both', labelsize=15)
+plt.title(
+'number of scintillation photons produced by $\\gamma$-rays of different energies',
+        fontsize=20)
+a, b = np.polyfit(energies, mius, 1)
+xs = np.linspace(0, 120, 100)
+ys = a * xs + b
+plt.plot(xs, ys, '--', linewidth=1)
+plt.show()
+
+for i in range(len(As)):
+    for j in range(len(As[i])):
+        N_ph_star = np.random.normal(loc=mius[i], scale=sigmas[i])
+        As[i][j] = As[i][j] * N_ph_star * L_effs[i] / N_phs[i][j]
+
+filename0 = "../Scintillation_Data/Creus/25deg_data.csv"
+filename1 = "../Scintillation_Data/Creus/40deg_data.csv"
+filename2 = "../Scintillation_Data/Creus/50deg_data.csv"
+filename3 = "../Scintillation_Data/Creus/60deg_data.csv"
+filename4 = "../Scintillation_Data/Creus/90deg_data.csv"
+
+data_filenames = [filename0, filename1, filename2, filename3, filename4]
+errors_filenames = []
+
+for i in range(len(data_filenames)):
+    err_down_file = data_filenames[i].replace("data", "err_down")
+    err_up_file = data_filenames[i].replace("data", "err_up")
+    errors_filenames.append((err_down_file, err_up_file))
+
+for i in range(len(As)):
+    # print(As[i])
+    plot_numPE(As[i], data_filenames[i], filenames_errors=errors_filenames[i])
+
+filename = "../ARIS_fit/Na/numPE_gamma_0.511_E_0.03_birks_150_absLen_0.495_TPBEfic.csv"
+dat = pd.read_csv(filename)
+numPE = dat.numPE
+numPE = numPE[numPE != 0]
 # if filename.split("_")[2] == "0.511":
-#     h, bins = np.histogram(numPE[numPE > 3100], 25)
-#     bins_center = (bins[1:] + bins[:-1]) / 2
-#     parameters = curve_fit(gauss, bins_center, h,
-#                            p0=[0, 45, 3300, 60])
-#     miu = parameters[0][2]
-#     H = parameters[0][0]
-#     A = parameters[0][1]
-#     d_miu = parameters[1][2][2]
-#     sigma = parameters[0][3]
-#     d_sigma = parameters[1][3][3]
-#     # print("miu = " + str(miu)+" +- " + str(d_miu) +", sigma = " + str(sigma))
-#     plt.plot(bins_center, gauss(bins_center, H, A, miu, sigma),
-#              '--',
-#              label='Fit result : $\\mu = $ ' + "{0:.2f}".format(miu) + ", $\\sigma = $ " + "{0:.2f}".format(sigma))
-#     plt.step((bins[1:] + bins[:-1]) / 2, h, label='Geant4 simulation')
-#     xs = [3300 for _ in range(np.max(h))]
-#     ys = np.linspace(0, np.max(h), np.max(h))
-#     plt.plot(xs, ys, '--', label="$^{22} Na$ p.e. spectrum")
-#     plt.xlabel('S1 [p.e]')
-#     plt.ylabel('counts')
-#     plt.title('$^{22}Na $ p.e. spectrum')
-#     plt.legend()
-#     plt.show()
-# plot_numPE(numPE, "../ARIS_fit/Am/Am_data.csv", label='$^{241} Am$ p.e. spectrum',
+h, bins = np.histogram(numPE[numPE > 0], 100)
+bins_center = np.array((bins[1:] + bins[:-1])) / 2
+# parameters = curve_fit(gauss, bins_center[bins_center > 3000], h[bins_center > 3000],
+#                        p0=[0, 45, 3300, 60])
+# miu = parameters[0][2]
+# H = parameters[0][0]
+# A = parameters[0][1]
+# d_miu = parameters[1][2][2]
+# sigma = parameters[0][3]
+# d_sigma = parameters[1][3][3]
+# print("miu = " + str(miu)+" +- " + str(d_miu) +", sigma = " + str(sigma))
+# plt.plot(bins_center, gauss(bins_center, H, A, miu, sigma),
+#          '--',
+#          label='Fit result : $\\mu = $ ' + "{0:.2f}".format(miu) + ", $\\sigma = $ " + "{0:.2f}".format(sigma))
+plt.errorbar(bins_center, h, yerr=np.sqrt(h), fmt='.', label='the simulation')
+xs = [3300 for _ in range(np.max(h))]
+xs2 = [3321 for _ in range(np.max(h))]
+ys = np.linspace(0, np.max(h), np.max(h))
+plt.plot(xs, ys, '--', label="ARIS photopeak location = 3300 p.e.")
+plt.plot(xs2, ys, '--', label="the simulation photopeak location = 3321 p.e.")
+plt.xlabel('S1 [p.e]',fontsize=20)
+plt.tick_params(axis='both', labelsize=15)
+plt.ylabel('counts (normalized)',fontsize=20)
+plt.title('$^{22}Na $ p.e. spectrum',fontsize=20)
+
+plt.legend()
+plt.show()
+
+
+# plot_numPE(numPE, "../ARIS_fit/Na/numPE_gamma_0.511_E_0.03_birks_150_absLen_0.495_TPBEfic.csv",
+#            title='$^{22} Na$ p.e. spectrum',
 #            gaussian_init_guess=[0, 3500, 365, 30])
+
+
 #
 # my_pes = [374, 3322]
 # my_sigmas = [20, 47]
@@ -2989,3 +3027,660 @@ from functions import *
 # # plt.show()
 #
 # #################################################################################################################
+
+#
+# energies = [2.5, 14, 30, 35, 40]
+# lengths = [150, 250, 350, 450, 550, 650, 1000, 3000]
+#
+# with open("../current/batch_runs.mac", "w") as f:
+#     f.write("/control/verbose 0\n/run/verbose 0\n/event/verbose 0\n/tracking/verbose 0\n/run/initialize\n\n")
+#     for E in energies:
+#         f.write(f"/gun/energy {E} MeV\n")
+#         for L in lengths:
+#             f.write(f"/mysim/setAbsLength {L} cm\n")
+#             if E == 2.5:
+#                 f.write("/run/beamOn 100000\n")
+#             else:
+#                 f.write("/run/beamOn 10000000\n")
+
+# dat = pd.read_csv("../current/electron_pe_timing_small_det.csv")
+# timings = dat.tAbsorbed
+# events = dat.eventID
+# for event in set(events):
+#     print(max(timings[events==event]))
+# pfs, tot_int = plot_prompt_fraction_graph("../current/prompt_study/photLoc.csv", "muon")
+
+
+#
+# filename1 = "../current/prompt_study/50_50/7_1500_ns/photTimes_mu_100x200micro_1side.csv"
+# filename2 = "../current/prompt_study/50_50/7_1500_ns/photTimes_e_100x200micro_1side.csv"
+# filename3 = "../current/prompt_study/50_50/7_1500_ns/photTimes_p_100x200micro_1side.csv"
+# filename4 = "../current/prompt_study/50_50/7_1500_ns/photTimes_n_100x200micro_1side.csv"
+#
+# file_list = [filename1, filename2, filename3, filename4]
+# particles = [file_list[i].split("/")[5].split("_")[1] for i in range(len(file_list))]
+# plot_prompt_fraction_grid(file_list, particles)
+
+
+#
+# pfs, tot_int = plot_prompt_fraction_graph("../current/photLoc.csv", "electron")
+# pfs, tot_int = plot_prompt_fraction_graph("../current/prompt_study/electron_pe_timing_small_det.csv", "proton")
+# pfs2, tot_int2 = plot_prompt_fraction_graph("../current/prompt_study/proton_pe_timing_small_det.csv", "electron")
+# pfs3, tot_int3 = plot_prompt_fraction_graph("../current/prompt_study/electron_pe_timing_protoDUNE.csv", "electron")
+# pfs4, tot_int4 = plot_prompt_fraction_graph("../current/prompt_study/proton_pe_timing_protoDUNE.csv", "proton")
+
+# avg_pf_electron = np.average(pfs)
+# sigma_pf_electron = np.std(pfs)
+# avg_pf_proton = np.average(pfs2)
+# sigma_pf_proton = np.std(pfs2)
+
+
+def time_distribution(t, As, At):
+    # Example: Bi-exponential (fast and slow components)
+    fast_time = 7
+    slow_time = 1500
+    fast = As / fast_time * np.exp(-t / fast_time)
+    slow = At / slow_time * np.exp(-t / slow_time)
+    return fast + slow
+
+
+# Sampling parameters
+# t_min = 0
+# t_max = 10000  # ns
+# fig = plt.figure(figsize=(8, 6))
+# bin_width = 10
+#
+# t_values = np.arange(t_min, t_max, 10)
+# y_values = time_distribution(t_values, 0.8, 1 - 0.8)
+# plt.plot(t_values, y_values, '.', label='singlet amplitude = 0.8')
+# y_values = time_distribution(t_values, 0.1, 1 - 0.1)
+# plt.plot(t_values, y_values, '.', color='black', label='singlet amplitude = 0.1')
+# equation = r"$\ell(t) = \frac{A_S}{\tau_S} \exp\left(-\frac{t}{\tau_S}\right) + \frac{A_T}{\tau_T} \exp\left(-\frac{t}{\tau_T}\right)$"
+# plt.text(0.5, 0.65, equation, fontsize=22, ha='center', va='bottom', transform=plt.gca().transAxes)
+# plt.yscale('log')
+# plt.xlabel("time [ns]",fontsize=20)
+# plt.ylabel("amplitude [a.u.]",fontsize=15)
+# plt.yscale('log')
+# plt.title("")
+# plt.legend()
+# fig.savefig("example_dist.png")
+# plt.close(fig)
+# #
+# prompt_window = (-300, 500)  # relative to the peak
+#
+# amplitudes = np.linspace(0, 1, 100)
+# prompt_fractions = []
+# for amp in amplitudes:
+#     # 1. Sample the function
+#     t_values = np.arange(t_min, t_max, bin_width)
+#     y_values = time_distribution(t_values, amp, 1 - amp)
+#
+#     # 2. Normalize the distribution
+#     area = simpson(y_values, x=t_values)
+#     y_values_normalized = y_values / area
+#
+#     # 3. Find peak time
+#     peak_index = np.argmax(y_values_normalized)
+#     peak_time = t_values[peak_index]
+#
+#     # 4. Define integration windows
+#     prompt_start = peak_time + prompt_window[0]
+#     prompt_end = peak_time + prompt_window[1]
+#
+#     # 5. Define masks for integration
+#     in_prompt = (t_values >= prompt_start) & (t_values <= prompt_end)
+#     in_total = (t_values >= prompt_start)
+#
+#     # 6. Compute prompt fraction
+#     numerator = simpson(y_values_normalized[in_prompt], x=t_values[in_prompt])
+#     denominator = simpson(y_values_normalized[in_total], x=t_values[in_total])
+#     prompt_fraction = numerator / denominator if denominator > 0 else np.nan
+#     prompt_fractions.append(prompt_fraction)
+#
+# fig = plt.figure(figsize=(8, 6))
+# plt.plot(amplitudes, prompt_fractions, '.', label='analytic calculation of singlet amplitude vs prompt fraction')
+# a, b = np.polyfit(amplitudes, prompt_fractions, 1)
+# print(f'line equation = {a}x + {b}')
+# plt.plot(amplitudes, a * amplitudes + b, '-',
+#          label='linear fit')
+# plt.errorbar(0.8, avg_pf_electron, yerr=sigma_pf_electron, fmt='.', capthick=2, capsize=2, markeredgecolor='k',
+#              label="Simulated prompt fraction for electron with singlet amplitude = 0.8")
+# plt.errorbar(0.1, avg_pf_proton, yerr=sigma_pf_proton, fmt='.', capthick=2, capsize=2, markeredgecolor='k',
+#              label="Simulated prompt fraction for proton with singlet amplitude = 0.1")
+# plt.xlabel('singlet relative amplitude',fontsize=20)
+# plt.ylabel('prompt fraction',fontsize=20)
+# plt.title("")
+# plt.legend()
+# fig.savefig("analytic_pf.png", dpi=300, bbox_inches='tight')
+# plt.close(fig)
+
+# plot_prompt_fraction_graph(filename,"muon")
+# file_list = []
+# directory = "../current/prompt_study"
+# for entry in os.scandir(directory):
+#     if entry.is_file():  # check if it's a file
+#         print(entry.path)
+#     elif entry.is_dir():
+#         for dire in os.scandir(entry.path):
+#             for entry2 in os.scandir(dire.path):
+#                 if entry2.is_file():
+#                     # print(entry2.path)
+#                     if len(entry2.path.split("/")[2].split("\\")[3].split("_")) == 3:
+#                         print(entry2.path)
+#                         file_list.append(entry2.path)
+#                     particle = entry2.path.split("/")[2].split('\\')[3].split("_")[1]
+# if particle =="mu":
+#     particle_name = "muon"
+# else:
+#     particle_name = "neutron"
+# plot_prompt_fraction_graph(entry2.path,particle_name)
+
+# plot_prompt_fraction_grid(file_list,"idk",use_name=True)
+#
+# dat = pd.read_csv("../current/Bi-207_spect.csv")
+# energy = dat.energy
+# counts = dat.counts
+# plt.plot(energy,counts)
+# plt.xlabel("channel")
+# plt.ylabel('counts')
+# plt.show()
+
+# sim_file = "../ARIS_fit/neutrons/sim/numPE_neutron_0.03_birks_150_absLen_0.495_TPBEfic.csv"
+sim_file = "../current/money_plot/Python_MC/numPE_neutron_0.03_birks_150_absLen_0.495_TPBEfic.csv"
+dat = pd.read_csv(sim_file)
+num_pe = dat.numDown + dat.numUp
+num_elastic_scatter = dat.numElasticSensitive
+inelastic_scatter = dat.scatteredInelastically
+detector = dat.detector
+N_ph = dat.numPhotons
+
+num_pe = num_pe[num_elastic_scatter == 1]
+num_pe = num_pe[inelastic_scatter == 0]
+N_ph = N_ph[num_elastic_scatter == 1]
+N_ph = N_ph[inelastic_scatter == 0]
+
+N_ph0 = list(N_ph[detector == "A0"])
+N_ph1 = list(N_ph[detector == "A1"])
+N_ph2 = list(N_ph[detector == "A2"])
+N_ph3 = list(N_ph[detector == "A3"])
+N_ph4 = list(N_ph[detector == "A4"])
+N_ph5 = list(N_ph[detector == "A5"])
+N_ph6 = list(N_ph[detector == "A6"])
+N_ph7 = list(N_ph[detector == "A7"])
+
+N_phs = [N_ph0, N_ph1, N_ph2, N_ph3, N_ph4, N_ph5, N_ph6, N_ph7]
+
+A0_pe = list(num_pe[detector == "A0"])
+A1_pe = list(num_pe[detector == "A1"])
+A2_pe = list(num_pe[detector == "A2"])
+A3_pe = list(num_pe[detector == "A3"])
+A4_pe = list(num_pe[detector == "A4"])
+A5_pe = list(num_pe[detector == "A5"])
+A5_mult_elastic = (num_pe[detector == "A5"])[num_elastic_scatter > 1]
+A6_pe = list(num_pe[detector == "A6"])
+A6_mult_elastic = (num_pe[detector == "A6"])[num_elastic_scatter > 1]
+A7_pe = list(num_pe[detector == "A7"])
+A7_mult_elastic = (num_pe[detector == "A7"])[num_elastic_scatter > 1]
+
+# print("percentage of multiple elastic scatters for detector A5 = ", 100 * len(A5_mult_elastic) / len(A5_pe))
+# print("percentage of multiple elastic scatters for detector A6 = ", 100 * len(A6_mult_elastic) / len(A6_pe))
+# print("percentage of multiple elastic scatters for detector A7 = ", 100 * len(A7_mult_elastic) / len(A7_pe))
+As = [A0_pe, A1_pe, A2_pe, A3_pe, A4_pe, A5_pe, A6_pe, A7_pe]
+
+L_effs_ARIS = [0.243, 0.258, 0.252, 0.268, 0.286, 0.304, 0.331, 0.349]
+L_effs_const = [0.3 for _ in range(9)]
+energies_ARIS = [7.1, 13.7, 17.8, 21.7, 40.5, 65.4, 98.1, 117.8]
+new_energies = np.append(0, energies_ARIS)
+mius = np.load("../ARIS_fit/neutrons/sim/mius.npy")
+sigmas = np.load("../ARIS_fit/neutrons/sim/sigmas.npy")
+
+# force trend line through 0
+mius = np.append(0, mius)
+sigmas = np.append(2, sigmas)
+
+#
+for i in range(len(mius) - 1):
+    plt.errorbar(energies_ARIS[i], mius[i + 1], yerr=sigmas[i + 1], fmt='.', capsize=5, color='black')
+    plt.ylabel('$N_{PH}$', fontsize=30)
+    plt.xlabel('energy[$keV_{ee}$]', fontsize=20)
+    plt.title(
+        'Number of scintillation photons produced by $\\gamma$-rays of different energies',
+        fontsize=20)
+
+
+def linear(x, m, n):
+    return m * x + n
+
+
+a, b = np.polyfit(new_energies, mius, 1)
+popt = curve_fit(linear, new_energies, mius, p0=[a, b], sigma=sigmas)
+a = popt[0][0]
+b = popt[0][1]
+print(f"line equation = {a}x + {b}")
+plt.tick_params(axis='both', labelsize=15)
+xs = np.linspace(0, 120, 100)
+plt.plot(xs, a * xs + b, label='trend line')
+plt.show()
+
+xs = np.linspace(0, 120, 100)
+ys = a * xs + b
+# plt.plot(xs, ys, '--', label=f"line = {a}x + {b}")
+# plt.legend()
+# plt.show()
+
+
+for i in range(len(As)):
+    for j in range(len(As[i])):
+        N_ph_star = np.random.normal(loc=mius[i + 1], scale=sigmas[i + 1])
+        # print(N_ph_star)
+        As[i][j] = As[i][j] * N_ph_star * L_effs_ARIS[i] / N_phs[i][j]
+
+# plt.hist(As[0])
+# plt.xlabel('S1[pe]')
+# plt.ylabel('counts')
+# plt.title('ARIS A0 pe count histogram')
+# plt.show()
+
+filename0 = "../ARIS_fit/neutrons/data/A0_data.csv"
+filename1 = "../ARIS_fit/neutrons/data/A1_data.csv"
+filename2 = "../ARIS_fit/neutrons/data/A2_data.csv"
+filename3 = "../ARIS_fit/neutrons/data/A3_data.csv"
+filename4 = "../ARIS_fit/neutrons/data/A4_data.csv"
+filename5 = "../ARIS_fit/neutrons/data/A5_data.csv"
+filename6 = "../ARIS_fit/neutrons/data/A6_data.csv"
+filename7 = "../ARIS_fit/neutrons/data/A7_data.csv"
+
+init_guesses = [[40, 70, 10, 2], [15, 40, 20, 3], [30, 140, 25, 3], [60, 200, 35, 5], [60, 130, 65, 6],
+                [30, 60, 120, 15], [40, 110, 200, 20], [20, 200, 185, 30]]
+data_filenames = [filename0, filename1, filename2, filename3, filename4, filename5, filename6, filename7]
+
+for i in range(len(As)):
+    plot_numPE(As[i], data_filenames[i])
+
+# # Directory containing your CSVs
+csv_dir = "../current/Lab_setup/2.5MeV"
+
+pattern = os.path.join(csv_dir, "*.csv")
+csv_files = sorted(glob.glob(pattern))
+
+# Make sure output folder exists
+output_dir = "../current/Lab_setup/Plots/Lab_plots/2.5MeV"
+os.makedirs(output_dir, exist_ok=True)
+
+# Load all datasets
+datasets = {}
+for path in csv_files:
+    # derive a label from the filename, e.g. "2.5MeV_35cm"
+    label = os.path.basename(path).split("_")[-2] + "cm outer diameter"
+    df = pd.read_csv(path)
+
+    # compute SensitiveInteraction mask
+    num_el = df["numElasticSensitive"].values
+    num_inel = df["numInelasticSensitive"].values
+    sensitive = ((num_el > 0) | (num_inel > 0)).astype(int)
+
+    datasets[label] = {
+        "sensitive": sensitive,
+        "good": df["good"].values,
+        "outerCellEDep": df["outerCellEDep"].values,
+        "CryoEDep": df["CryoEDep"].values,
+        "incomingAng": df["incomingAng"].values * 180.0 / np.pi,
+        "innerCellEDep": df["innerCellEDep"].values,
+        "fiducialIncomingEn": df["fiducialIncomingEn"].values,
+        "escapeEn": df["escapeEn"].values,
+        "numElastic": df["numElasticSensitive"].values,
+        "numInelastic": df["numInelasticSensitive"].values,
+    }
+
+# good_events = datasets["30_MeV_35_cm"]["good"]
+# print(sum(good_events)/len(good_events))
+
+for label, d in datasets.items():
+    mask = (d["good"] == 1)
+    # Now filter **every** array in this dataset
+    for key, arr in d.items():
+        d[key] = arr[mask]
+
+# 1) Number of events with scatter in fiducial volume
+plt.figure()
+
+labels = []
+fractions = []
+
+for label, data in datasets.items():
+    frac_scattered = data["sensitive"].mean()   # fraction of True
+    labels.append(label)
+    fractions.append(frac_scattered)
+
+plt.bar(labels, fractions, edgecolor="black")
+plt.ylabel("Fraction", fontsize=25)
+plt.xlabel("Outer diameter", fontsize=25)
+plt.title("Fraction of events with scatter in fiducial volume", fontsize=20)
+
+plt.tight_layout()
+plt.show()
+
+# 2) Non‑fiducial energy deposit comparison
+plt.figure()
+for label, data in datasets.items():
+    mask = data["sensitive"] > 0
+    oc = data["outerCellEDep"][mask]
+    # normalize each to fraction of its own entries
+    h, bins = np.histogram(oc, bins=100, weights=np.ones_like(oc) / len(oc))
+    avg_bins = (bins[:-1] + bins[1:]) / 2
+    avg_bins = np.append(0, avg_bins)
+    h = np.append(0, h)
+
+    delta = avg_bins[-1] - avg_bins[-2]
+    extra_bin = avg_bins[-1] + delta
+    avg_bins = np.append(avg_bins, extra_bin)
+    h = np.append(h, 0)
+    plt.step(avg_bins, h, label=f"{label}")
+
+plt.xlabel("energy deposit [keV]",fontsize = 25)
+plt.ylabel("fraction of events",fontsize = 25)
+plt.tick_params(axis='both',labelsize=15)
+plt.yscale("log")
+plt.title("Neutron energy deposit outside fiducial volume",fontsize = 20)
+plt.legend()
+plt.tight_layout()
+# plt.savefig(os.path.join(output_dir, "compare_nonfiducial_energy_deposit.png"), dpi=300)
+plt.show()
+
+# 3) Incoming angle distribution comparison
+plt.figure()
+for label, data in datasets.items():
+    mask = data["sensitive"] > 0
+    angle_dist = data["incomingAng"][mask]
+    h, bins = np.histogram(angle_dist, bins=100, weights=np.ones_like(angle_dist) / len(angle_dist))
+    avg_bins = (bins[:-1] + bins[1:]) / 2
+    avg_bins = np.append(0, avg_bins)
+    h = np.append(0, h)
+    plt.step(avg_bins, h, label=label)
+
+plt.xlabel("incoming angle [deg]",fontsize = 25)
+plt.ylabel("fraction of events",fontsize = 25)
+plt.tick_params(axis='both',labelsize=15)
+plt.yscale("log")
+plt.title("Neutron incoming angle towards fiducial volume",fontsize=20)
+plt.legend()
+plt.tight_layout()
+# plt.savefig(os.path.join(output_dir, "compare_incoming_angle_distribution.png"), dpi=300)
+plt.show()
+
+# 4) Fiducial energy deposit comparison as step plots
+plt.figure()
+for label, data in datasets.items():
+    mask = data["sensitive"] > 0
+    vals = data["innerCellEDep"][mask]
+    h, bins = np.histogram(vals, bins=100, weights=np.ones_like(vals) / len(vals))
+    avg_bins = (bins[1:] + bins[:-1]) / 2
+    avg_bins = np.append(0, avg_bins)
+    h = np.append(0, h)
+    delta = avg_bins[-1] - avg_bins[-2]
+    extra_bin = avg_bins[-1] + delta
+    avg_bins = np.append(avg_bins, extra_bin)
+    h = np.append(h, 0)
+    plt.step(avg_bins, h, where='mid', label=label)
+plt.xlabel("energy deposit [keV]",fontsize = 25)
+plt.ylabel("fraction of events",fontsize = 25)
+plt.tick_params(axis='both',labelsize=15)
+plt.yscale('log')
+plt.title("neutron energy deposit in fiducial volume",fontsize=20)
+plt.legend()
+plt.tight_layout()
+# plt.savefig(os.path.join(output_dir, "compare_fiducial_energy_deposit.png"), dpi=300)
+plt.show()
+
+# 5) Incoming energy into fiducial volume comparison
+plt.figure()
+for label, data in datasets.items():
+    arr = data["fiducialIncomingEn"]
+    mask = (arr > 0) & (data["sensitive"] > 0)
+    vals = arr[mask]
+    h, bins = np.histogram(vals, bins=100, weights=np.ones_like(vals) / len(vals))
+    avg_bins = (bins[1:] + bins[:-1]) / 2
+    avg_bins = np.append(0, avg_bins)
+    h = np.append(0, h)
+    delta = avg_bins[-1] - avg_bins[-2]
+    extra_bin = avg_bins[-1] + delta
+    avg_bins = np.append(avg_bins, extra_bin)
+    h = np.append(h, 0)
+    plt.step(avg_bins, h, where='mid', label=label)
+plt.xlabel("incoming energy [keV]",fontsize = 25)
+plt.ylabel("fraction of events",fontsize = 25)
+plt.tick_params(axis='both',labelsize=15)
+plt.yscale("log")
+plt.title("neutron incoming energy into fiducial volume",fontsize=20)
+plt.legend()
+plt.tight_layout()
+# plt.savefig(os.path.join(output_dir, "compare_incoming_energy_fiducial.png"), dpi=300)
+plt.show()
+
+# 6) Neutron escape energy comparison
+plt.figure()
+for label, data in datasets.items():
+    # apply your “clean” mask as before
+    clean = data["escapeEn"][data["sensitive"] == 1]
+    h, bins = np.histogram(clean, bins=100, weights=np.ones_like(clean) / len(clean))
+    avg_bins = (bins[1:] + bins[:-1]) / 2
+    avg_bins = np.append(0, avg_bins)
+    h = np.append(0, h)
+    delta = avg_bins[-1] - avg_bins[-2]
+    extra_bin = avg_bins[-1] + delta
+    avg_bins = np.append(avg_bins, extra_bin)
+    h = np.append(h, 0)
+    plt.step(avg_bins, h, where='mid', label=label)
+plt.xlabel("energy [keV]",fontsize = 25)
+plt.ylabel("fraction of events",fontsize = 25)
+plt.tick_params(axis='both',labelsize=15)
+plt.yscale("log")
+plt.title("neutron escape energy",fontsize=20)
+plt.legend()
+plt.tight_layout()
+# plt.savefig(os.path.join(output_dir, "compare_neutron_escape_energy.png"), dpi=300)
+plt.show()
+
+# 7) Elastic vs Inelastic interactions in fiducial volume
+plt.figure()
+n = len(datasets)
+group_w1 = 0.2 / n
+group_w2 = 0.1 / n
+
+for i, (label, data) in enumerate(datasets.items()):
+    # only count within fiducial interactions
+    mask = data["sensitive"] > 0
+    x_el, y_el = discrete_count(data["numElastic"][mask])
+    x_in, y_in = discrete_count(data["numInelastic"][mask])
+    positions1 = [xi + (i + 1) * group_w1 for xi in x_el]
+    positions2 = [xi + (i + 1) * group_w2 for xi in x_in]
+
+    plt.bar(positions1, y_el, width=group_w1, edgecolor="black", alpha=0.7,
+            label=f"{label}")
+    # plt.bar(positions2, y_in, width=group_w2, edgecolor="black", alpha=0.7,
+    #         label=f"{label} inelastic")
+    plt.xticks(np.arange(0, max(x_el) + 1),fontsize=15)
+
+plt.xlabel("number of interactions",fontsize=25)
+plt.ylabel("fraction of events",fontsize = 25)
+plt.tick_params(axis='both',labelsize=15)
+plt.yscale("log")
+plt.title("number of elastic interactions in fiducial volume",fontsize=20)
+plt.legend()
+plt.tight_layout()
+# plt.savefig(os.path.join(output_dir, "compare_elastic_inelastic_fiducial.png"), dpi=300)
+plt.show()
+#
+# ###########################################################################################################
+#
+# L_effs_ARIS = [0.243, 0.258, 0.252, 0.268, 0.286, 0.304, 0.331, 0.349]
+# L_effs_const = [0.3 for _ in range(9)]
+# energies_ARIS = [7.1, 13.7, 17.8, 21.7, 40.5, 65.4, 98.1, 117.8]
+# new_energies = np.append(0, energies_ARIS)
+# mius = np.load("../ARIS_fit/neutrons/sim/mius.npy")
+# sigmas = np.load("../ARIS_fit/neutrons/sim/sigmas.npy")
+# mius = np.append(0, mius)
+# sigmas = np.append(2, sigmas)
+#
+#
+# #
+# # #
+# # for i in range(len(mius) - 1):
+# #     plt.errorbar(energies_ARIS[i], mius[i + 1], yerr=sigmas[i + 1], fmt='.', capsize=5, color='black')
+# #     plt.ylabel('$N_{PH}$', fontsize=16)
+# #     plt.xlabel('energy[$keV_{ee}$]', fontsize=16)
+# #     plt.title(
+# #         '$\\mu_{PH}^*$ = $E [keV_{ee}]\\times{Scint yield [\\frac{phot}{keV}]\\times{f(kB)}}$ and $\\sigma_{PH}^*$ as a function of photon energy',
+# #         fontsize=16)
+# #
+# #
+# def linear(x, m, n):
+#     return m * x + n
+#
+#
+# a, b = np.polyfit(new_energies, mius, 1)
+# popt = curve_fit(linear, new_energies, mius, p0=[a, b], sigma=sigmas)
+# a = popt[0][0]
+# b = popt[0][1]
+# # print(f"line equation = {a}x + {b}")
+# # xs = np.linspace(0, 120, 100)
+# # plt.plot(xs, a * xs + b, label='trend line')
+# # plt.show()
+#
+# data_dir = "../current/hdProtoDUNE/pes/everything"
+# pattern = re.compile(r"numPE_([0-9.]+)_cm_absLen_([0-9.]+)_MeV")
+#
+# # energy -> list of (absLen, filepath)
+# energy_groups = defaultdict(list)
+#
+# os.chdir(data_dir)
+# for filename in os.listdir("."):
+#     match = pattern.match(filename)
+#     if match:
+#         abs_len = float(match.group(1))  # 3000
+#         energy = float(match.group(2))  # 40
+#         # full_path = os.path.join(data_dir, filename)
+#         energy_groups[energy].append((abs_len, filename))
+#
+# # Sort energies for row order
+# sorted_energies = sorted(energy_groups.keys())
+#
+# # Determine column count (max absLen entries per energy)
+# n_rows = len(sorted_energies)
+# n_cols = max(len(files) for files in energy_groups.values())
+#
+# # Create subplot grid
+# fig, axes = plt.subplots(n_rows, n_cols, figsize=(4 * n_cols, 3 * n_rows), squeeze=False)
+#
+# ax_num = 0
+# for row, energy in enumerate(sorted_energies):
+#     ax_num += 1
+#     # Sort files by absLen
+#     sorted_group = sorted(energy_groups[energy], key=lambda x: x[0])
+#     for col, (abs_len, filepath) in enumerate(sorted_group):
+#         # print(filepath)
+#         ax = axes[row][col]
+#         dat = pd.read_csv(filepath)
+#         eventID = dat.eventID
+#         pes = dat.numPE
+#         pes_by_Ar = dat.numPEAr
+#         eDep = dat.eDep
+#         photons = dat.numPhotons
+#         inelastic = dat.numInelastic
+#         num_elastic = dat.numElasticSensitive
+#         n_capture = dat.nCapture
+#
+#         # ---------- Step 1: Correct pes_by_Ar for all events ----------
+#         pes_all = np.array(pes)
+#         pes_by_Ar_all = np.array(pes_by_Ar)
+#         photons_all = np.array(photons)
+#         eDep_all = np.array(eDep)
+#         num_elastic_all = np.array(num_elastic)
+#
+#         num_problems_total = 0
+#         for j in range(len(pes_all)):
+#             if num_elastic_all[j] and pes_by_Ar_all[j]:
+#                 avg_energy_deposit = eDep_all[j] / num_elastic_all[j]
+#                 index = np.searchsorted(energies_ARIS, avg_energy_deposit)
+#                 N_ph_star = a * avg_energy_deposit + b
+#
+#                 if N_ph_star > 0:
+#                     if index == 0:
+#                         pes_by_Ar_all[j] *= N_ph_star * L_effs_ARIS[index] / photons_all[j]
+#                     elif index == len(energies_ARIS):
+#                         pes_by_Ar_all[j] *= N_ph_star * L_effs_ARIS[index - 1] / photons_all[j]
+#                     else:
+#                         pes_by_Ar_all[j] *= N_ph_star * (
+#                                 L_effs_ARIS[index - 1] + L_effs_ARIS[index]
+#                         ) / (2 * photons_all[j])
+#                 else:
+#                     num_problems_total += 1
+#
+#         pes_total_all = pes_all + pes_by_Ar_all
+#
+#         # ---------- Step 2: Use common binning ----------
+#         num_bins = max([int(np.max(pes_total_all) // 5), 10])
+#         counts_all, bins = np.histogram(pes_total_all, bins=num_bins, density=False)
+#         bin_centers = (bins[1:] + bins[:-1]) / 2
+#         ax.step(bin_centers, counts_all, where='mid', label='All events', color='black')
+#
+#         # Determine xlim based on bins with non-zero counts
+#         above_threshold = np.where(counts_all > 0.0001)[0]
+#         if len(above_threshold) > 1:
+#             x_min = bin_centers[above_threshold[0]]
+#             x_max = bin_centers[above_threshold[-1]]
+#             ax.set_xlim(x_min, x_max)
+#         else:
+#             print("[Unmasked] No bins above threshold")
+#
+#         # ---------- Step 3: Process masked distributions ----------
+#         for mask, label, color in zip(
+#                 [inelastic <= 2, inelastic > 2],
+#                 ['inelastic ≤ 2', 'inelastic > 2'],
+#                 ['blue', 'orange']
+#         ):
+#             pes_masked = np.array(pes[mask])
+#             pes_by_Ar_masked = np.array(pes_by_Ar[mask])
+#             photons_masked = np.array(photons[mask])
+#             eDep_masked = np.array(eDep[mask])
+#             num_elastic_masked = np.array(num_elastic[mask])
+#
+#             num_problems = 0
+#             for j in range(len(pes_masked)):
+#                 if num_elastic_masked[j] and pes_by_Ar_masked[j]:
+#                     avg_energy_deposit = eDep_masked[j] / num_elastic_masked[j]
+#                     index = np.searchsorted(energies_ARIS, avg_energy_deposit)
+#                     N_ph_star = a * avg_energy_deposit + b
+#
+#                     if N_ph_star > 0:
+#                         if index == 0:
+#                             pes_by_Ar_masked[j] *= N_ph_star * L_effs_ARIS[index] / photons_masked[j]
+#                         elif index == len(energies_ARIS):
+#                             pes_by_Ar_masked[j] *= N_ph_star * L_effs_ARIS[index - 1] / photons_masked[j]
+#                         else:
+#                             pes_by_Ar_masked[j] *= N_ph_star * (
+#                                     L_effs_ARIS[index - 1] + L_effs_ARIS[index]
+#                             ) / (2 * photons_masked[j])
+#                     else:
+#                         num_problems += 1
+#
+#             pes_total_masked = pes_masked + pes_by_Ar_masked
+#
+#             if len(pes_total_masked) == 0:
+#                 continue
+#
+#             print(f"[{label}] ratio of problematic events = {num_problems / len(pes_total_masked):.4f}")
+#
+#             counts_masked, _ = np.histogram(pes_total_masked, bins=bins, density=False)
+#             ax.step(bin_centers, counts_masked, where='mid', label=label, color=color)
+#
+#         # ax.set_yscale('log')
+#         ax.set_xlabel("number of p.e.")
+#         ax.set_ylabel("counts (normalized)")
+#         ax.legend()
+#         ax.set_title(filepath.split("_")[1] + " cm absLength, " + filepath.split("_")[4] + " MeV neutron")
+#
+# plt.suptitle("number of p.e. expected in hdProtoDUNE from neutron elastic scatters", fontsize=14)
+# plt.tight_layout(rect=[0, 0, 1, 0.96])
+# plt.savefig("numPE_hdProtoDUNE.png", dpi=300)
+# plt.close(fig)
