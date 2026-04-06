@@ -39,11 +39,14 @@
 #include "globals.hh"
 #include "G4Cache.hh"
 #include "G4Tubs.hh"
+#include "G4OpticalSurface.hh"
 #include "G4Orb.hh"
 #include "G4Colour.hh"
 #include "G4Scintillation.hh"
 #include "G4VisAttributes.hh"
 #include "G4PVPlacement.hh"
+#include "G4Region.hh"
+#include "G4ProductionCuts.hh"
 #include <sstream>
 
 class G4Box;
@@ -58,9 +61,74 @@ class G4GlobalMagFieldMessenger;
 
 class DetectorConstruction : public G4VUserDetectorConstruction
 {
+  // ------------------ Config knobs (set by messenger) ------------------
+  G4int    fTopPMTs   = 0;     // 0..4 active tiles
+  G4int    fBotPMTs   = 0;     // 0..4 active tiles
+  G4int    fSiPMRows  = 0;     // 0..16 active rows
+
+  G4double fRefl_PMT  = 0.35;  // reflectivity of active PMT tile
+  G4double fRefl_SiPM = 0.4;  // reflectivity of active SiPM tile
+
+  // setting these for EFFICIENCY check - efficiency = p(detection) / p(absorption)
+  G4double fPDE_TopPMT = 0.266 / (1-fRefl_PMT); // at ~420 nm
+  G4double fPDE_BotPMT = 0.266 / (1-fRefl_PMT); // at ~420 nm
+  G4double fPDE_SiPM  = 0.35  / (1-fRefl_SiPM);
+
+  G4MaterialPropertiesTable* fMPT_ESR = nullptr;
+  G4MaterialPropertiesTable* fMPT_TopPMT_Active = nullptr;
+  G4MaterialPropertiesTable* fMPT_BotPMT_Active = nullptr;
+  G4MaterialPropertiesTable* fMPT_SiPM_Active = nullptr;
+
+  G4double fCached_PDE_TopPMT  = -1.0;
+  G4double fCached_PDE_BotPMT  = -1.0;
+  G4double fCached_Refl_PMT = -1.0;
+  G4double fCached_PDE_SiPM = -1.0;
+  G4double fCached_Refl_SiPM = -1.0;
+
+
+  // ------------------ Patch bookkeeping ------------------
+  std::vector<G4VPhysicalVolume*> fTopPMT_PV;
+  std::vector<G4VPhysicalVolume*> fBotPMT_PV;
+  std::vector<G4OpticalSurface*>  fTopPMT_Surf;
+  std::vector<G4OpticalSurface*>  fBotPMT_Surf;
+
+  std::vector<G4VPhysicalVolume*> fSiPM_PV;
+  std::vector<G4OpticalSurface*>  fSiPM_Surf;
+  std::vector<int>                fSiPM_RowOfTile;
+
+  G4int fSiPM_TilesPerRow = 0; // computed
+
+  // ------------------ Build + apply methods ------------------
+
+public:
+  void BuildPMTPatches();   // builds 4 top + 4 bottom (max)
+  void BuildSiPMPatches();  // builds max rows and tiles
+  void ApplySensorConfig(); // updates EFFICIENCY/REFLECTIVITY per patch
+
+  // ------------------ Setters used by messenger ------------------
+  public:
+  void SetTopPMTs(G4int v)   { fTopPMTs  = v; }
+  void SetBotPMTs(G4int v)   { fBotPMTs  = v; }
+  void SetSiPMRows(G4int v)  { fSiPMRows = v; }
+
+  G4int GetTopPMTs()  const  {return fTopPMTs;}
+  G4int GetBotPMTs()  const  {return fBotPMTs;}
+  G4int GetSiPMRows() const  {return fSiPMRows;}
+
+
+  void SetPDETopPMT(G4double v) { fPDE_TopPMT = v; }
+  void SetPDEBotPMT(G4double v) { fPDE_BotPMT = v; }
+  void SetPDESiPM(G4double v)  { fPDE_SiPM  = v; }
+
+  //void SetReflESR(G4double v)  { fRefl_ESR  = v; }
+  void SetReflPMT(G4double v)  { fRefl_PMT  = v; }
+  void SetReflSiPM(G4double v) { fRefl_SiPM = v; }
+
 public:
 
   G4double tpb;
+  std::vector<G4VisAttributes*> fVisAttributes;
+
   explicit DetectorConstruction();
   virtual ~DetectorConstruction();
 
@@ -68,6 +136,7 @@ public:
   void SetAbsorberThickness(G4double);
   void SetAbsorberSizeYZ   (G4double);
 
+  void UpdateOuterCellSize(G4double cellDiameter);
   void SetAbsorberXpos(G4double);
 
   void SetBirksConstant(G4double value) {
@@ -79,6 +148,68 @@ public:
           absorptionLength[i] = value;
       }
   }
+
+  void SetOuterCellSize(G4double value) {
+      outerDiameter = value;
+  }
+
+  const void placeLiquidScintillator(G4ThreeVector pos, G4double rotatAng, G4double fiberDiam, G4double fiberLen, G4Material* fibMat, G4LogicalVolume* motherVol, G4String name) {
+
+    G4Tubs* solidFiber = new G4Tubs(name,                      // name
+                           0 * CLHEP::mm, 0.5 * fiberDiam,     // r1, r2
+                           0.5 * fiberLen,                     // half-length
+                           0., CLHEP::twopi);                  // theta1, theta2
+
+    G4LogicalVolume* logicFiber = new G4LogicalVolume(solidFiber,  // solid
+                                     fibMat,                      // material
+                                     name);                       // name
+
+    // rotation around y axis
+    // u, v, w are the daughter axes, projected on the mother frame
+    G4double rotatAng2 = CLHEP::pi / 2 - rotatAng;
+    G4ThreeVector u = G4ThreeVector(std::cos(rotatAng2), 0, std::sin(rotatAng2));
+    G4ThreeVector v = G4ThreeVector(0, 1, 0);
+    G4ThreeVector w = G4ThreeVector(std::sin(-rotatAng2), 0, std::cos(rotatAng2));
+
+    // rotation around x axis
+    // G4ThreeVector u1 = G4ThreeVector(1, 0, 0);
+    // G4ThreeVector v1 = G4ThreeVector(0, std::cos(rotatAng), std::sin(-rotatAng));
+    // G4ThreeVector w1 = G4ThreeVector(0, std::sin(rotatAng), std::cos(rotatAng));
+
+    G4RotationMatrix rotMat = G4RotationMatrix(u, v, w);
+    std::cout << "position before rotation = " << pos << std::endl;
+    pos = rotateAroundY(pos, rotatAng);
+    std::cout << "position after rotation = " << pos << std::endl;
+    const G4Transform3D& trans = G4Transform3D(rotMat, pos);
+
+    G4VPhysicalVolume* physiFiber = new G4PVPlacement(trans,
+                                  logicFiber,                  // its logical volume
+                                  name,                        // its name
+                                  motherVol,                   // its mother
+                                  false,                       // no boolean operat
+                                  0);
+
+    auto visAttributes = new G4VisAttributes(G4Colour(0.19,0.83,0.78));   // make liquid scintilator turquoise
+    logicFiber->SetVisAttributes(visAttributes);
+    visAttributes->SetForceSolid(true);
+    fVisAttributes.push_back(visAttributes);
+
+    // After: G4LogicalVolume* logicFiber = new G4LogicalVolume(solidFiber, fibMat, name);
+
+    // Create (once) and reuse a region for all LS volumes
+    //static G4Region* gLSRegion = nullptr;
+    //if (!gLSRegion) {
+      //gLSRegion = new G4Region("LSRegion");
+      //auto cuts = new G4ProductionCuts();
+      //cuts->SetProductionCut(2.0*CLHEP::mm, G4ProductionCuts::GetIndex("gamma"));
+      //cuts->SetProductionCut(2.0*CLHEP::mm, G4ProductionCuts::GetIndex("e-"));
+      //cuts->SetProductionCut(2.0*CLHEP::mm, G4ProductionCuts::GetIndex("e+"));
+      //cuts->SetProductionCut(2.0*CLHEP::mm, G4ProductionCuts::GetIndex("proton"));
+      //gLSRegion->SetProductionCuts(cuts);
+    //}
+    //gLSRegion->AddRootLogicalVolume(logicFiber);
+
+}
 
   void SetWorldMaterial(const G4String&);
   void SetWorldSizeX   (G4double);
@@ -101,9 +232,21 @@ public:
   
   std::vector<G4double> absorptionLength;
   G4double birks;
+  G4double outerDiameter;
   G4double LArX;
   G4double LArY;
   G4double LArZ;
+  G4double innerDiameter;
+  G4double innerHeight;
+  G4double outerHeight;
+  G4double           fiberDiameter;
+  G4double           fiberLength;
+  G4Material *       fiberMat;
+  G4Material*        tpbMat;
+
+
+  G4Material*       GetTPBMaterial()   const { return tpbMat; }
+  G4LogicalVolume*  GetInnerCellLV()   const { return innerCellLogic; }
 
   const G4Material* GetWorldMaterial() const    {return fWorldMaterial;};
   G4double GetWorldSizeX() const                {return fWorldSizeX;};
@@ -132,45 +275,6 @@ public:
       return ret;
   }
  
-  const void placeLiquidScintillator(G4ThreeVector pos,G4double rotatAng,G4double fiberDiam,G4double fiberLen,G4Material* fibMat,G4LogicalVolume* motherVol,G4String name){
-      
-      G4Tubs* solidFiber = new G4Tubs(name,                      //name
-                             0*CLHEP::mm, 0.5*fiberDiam,       //r1, r2
-                             0.5*fiberLen,               //half-length
-                             0., CLHEP::twopi);                    //theta1, theta2
-
-      G4LogicalVolume* logicFiber = new G4LogicalVolume(solidFiber,          //solid
-                                       fibMat,            //material
-                                       name);            //name
-
-
-      // rotation around y axis
-      // u, v, w are the daughter axes, projected on the mother frame
-      G4double rotatAng2 = CLHEP::pi / 2 - rotatAng;
-      G4ThreeVector u = G4ThreeVector(std::cos(rotatAng2) , 0, std::sin(rotatAng2));
-      G4ThreeVector v = G4ThreeVector(0 , 1, 0);
-      G4ThreeVector w = G4ThreeVector(std::sin(-rotatAng2), 0, std::cos(rotatAng2)); 
-
-
-      // rotation around x axis
-      //G4ThreeVector u1 = G4ThreeVector(1,0,0);
-      //G4ThreeVector v1 = G4ThreeVector(0,std::cos(rotatAng),std::sin(-rotatAng));
-      //G4ThreeVector w1 = G4ThreeVector(0,std::sin(rotatAng),std::cos(rotatAng));
-
-      G4RotationMatrix rotMat  = G4RotationMatrix(u, v, w);
-      std::cout << "position before rotation = " << pos << std::endl;
-      pos = rotateAroundY(pos,rotatAng);
-      std::cout << "position after rotation = " << pos << std::endl;
-      const G4Transform3D & trans = G4Transform3D(rotMat,pos);
-
-
-      G4VPhysicalVolume* physiFiber = new G4PVPlacement(trans,
-                                    logicFiber,                    //its logical volume
-                                    name,                          //its name
-                                    motherVol,                      //its mother
-                                    false,                         //no boulean operat
-                                    0);      
-  }
 
 private:
 
@@ -178,17 +282,8 @@ private:
   void ComputeGeomParameters();
   void ChangeGeometry();
 
-  G4double           fiberDiameter;
-  G4double           fiberLength;
-  
-  G4double outerDiameter;
-  G4double outerHeight;
-  G4double innerDiameter;
-  G4double innerHeight;
-
-  G4Material *       fiberMat;
   G4Material*        Al;
-
+  G4Material*        noScintMaterial;
   G4Material*        fAbsorberMaterial;
   G4double           fAbsorberThickness;
   G4double           fAbsorberSizeYZ;

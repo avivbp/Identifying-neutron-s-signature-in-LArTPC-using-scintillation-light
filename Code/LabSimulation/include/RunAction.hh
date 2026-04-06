@@ -37,6 +37,8 @@
 #include "globals.hh"
 #include <iostream>
 #include <fstream>
+#include "G4ParticleTable.hh"
+#include "G4ProcessManager.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -51,6 +53,7 @@ class RunAction : public G4UserRunAction
 {
 
 public:
+
     std::ofstream csvfile;
     G4int numPassed;
     RunAction(DetectorConstruction* det, PrimaryGeneratorAction* prim=0);

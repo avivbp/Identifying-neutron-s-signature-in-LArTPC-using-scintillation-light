@@ -1,0 +1,23 @@
+/run/initialize
+
+/det/setReflESR 0.95
+/det/setReflPMT 0.10
+/det/setReflSiPM 0.10
+/det/setPDEPMT 0.266
+/det/setPDESiPM 0.117
+
+# config 1: max sensors
+/det/setTopPMTs 4
+/det/setBotPMTs 4
+/det/setSiPMRows 16
+/run/beamOn 10000
+
+# config 2: fewer SiPM rows
+/det/setSiPMRows 8
+/run/beamOn 10000
+
+# config 3: only bottom PMTs
+/det/setTopPMTs 0
+/det/setBotPMTs 4
+/run/beamOn 10000
+

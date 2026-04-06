@@ -66,18 +66,21 @@ StackingAction::ClassifyNewTrack(const G4Track* aTrack)
   //keep primary particle
   if (aTrack->GetParentID() == 0) { return fUrgent; }
 
-  // Count what process generated the optical photons
-     if(aTrack->GetDefinition() == G4OpticalPhoton::OpticalPhotonDefinition()){
-         // particle is optical photon
-         if(aTrack->GetParentID() > 0){
-             // particle is secondary
-             if(aTrack->GetCreatorProcess()->GetProcessName() == "Scintillation"){
-             //std::cout << "scintillationd" << std::endl;
-             }
-             else if(aTrack->GetCreatorProcess()->GetProcessName() == "Cerenkov"){
-             }
-         }
-     }
+  //if(aTrack->GetDefinition() == G4OpticalPhoton::OpticalPhotonDefinition()){
+      //if (aTrack->GetDefinition() == G4OpticalPhoton::OpticalPhotonDefinition()){
+        //  auto lv = aTrack->GetLogicalVolumeAtVertex();            // volume at creation
+         // auto reg = lv ? lv->GetRegion() : nullptr;
+          //if (reg) {
+            //const auto& rname = reg->GetName();
+            //const auto t = aTrack->GetGlobalTime();
+            //if (rname=="InnerLArRegion" && t > fEventAction->tZeroEx)
+             // return fKill;
+            //if (rname=="LSRegion" && t > fEventAction->tOneEx)
+             // return fKill;
+          //}
+      //}
+  return fUrgent;
+  //}
 
   //G4int procID = aTrack->GetCreatorProcess()->GetProcessSubType();
   //G4int modelID = aTrack->GetCreatorModelID();

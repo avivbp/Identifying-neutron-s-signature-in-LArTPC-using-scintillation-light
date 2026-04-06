@@ -37,28 +37,164 @@
 #include "G4Box.hh"
 #include "G4LogicalVolume.hh"
 #include "G4UniformMagField.hh"
+#include "G4UnionSolid.hh"
 
 #include "G4GeometryManager.hh"
 #include "G4PhysicalVolumeStore.hh"
 #include "G4LogicalVolumeStore.hh"
 #include "G4SolidStore.hh"
-#include "G4OpticalSurface.hh"
 #include "G4LogicalBorderSurface.hh"
+#include "G4LogicalSkinSurface.hh"
 
 #include "G4UnitsTable.hh"
 #include "G4NistManager.hh"
 #include "G4RunManager.hh"
-#include "PMTSensitiveDetector.hh"
 #include "G4SDManager.hh"
 #include "G4VSensitiveDetector.hh"
 #include "G4PhysicalConstants.hh"
 #include "G4SystemOfUnits.hh"
-
+#include "G4TransportationManager.hh"
 #include "G4GlobalMagFieldMessenger.hh"
 #include "G4AutoDelete.hh"
 #include <map>
 #include <string>
 #include <iterator>
+#include <cmath>
+//#include "G4GeometryTolerance.hh"
+
+namespace {
+  constexpr int kNESR = 46;
+
+  G4double kESR_E[kNESR] = {
+  2.101*eV, 2.142*eV, 2.180*eV, 2.214*eV, 2.246*eV,
+  2.269*eV, 2.297*eV, 2.335*eV, 2.360*eV, 2.385*eV,
+  2.406*eV, 2.438*eV, 2.464*eV, 2.503*eV, 2.526*eV,
+  2.549*eV, 2.585*eV, 2.615*eV, 2.646*eV, 2.684*eV,
+  2.717*eV, 2.765*eV, 2.806*eV, 2.849*eV, 2.886*eV,
+  2.955*eV, 3.044*eV, 3.121*eV, 3.157*eV, 3.175*eV,
+  3.193*eV, 3.221*eV, 3.239*eV, 3.249*eV, 3.268*eV,
+  3.278*eV, 3.287*eV, 3.297*eV, 3.307*eV, 3.327*eV,
+  3.347*eV, 3.377*eV, 3.408*eV, 3.450*eV, 3.494*eV,
+  3.538*eV
+  };
+
+  G4double kESR_R[kNESR] = {
+  0.979, 0.982, 0.982, 0.982, 0.982,
+  0.982, 0.982, 0.982, 0.982, 0.982,
+  0.982, 0.982, 0.982, 0.982, 0.982,
+  0.982, 0.979, 0.979, 0.979, 0.977,
+  0.977, 0.977, 0.977, 0.977, 0.979,
+  0.977, 0.972, 0.958, 0.944, 0.925,
+  0.896, 0.816, 0.721, 0.633, 0.562,
+  0.493, 0.422, 0.355, 0.296, 0.277,
+  0.261, 0.246, 0.234, 0.223, 0.220,
+  0.204
+};
+
+
+ 
+  G4MaterialPropertiesTable* MakeFlatMPT(G4double eff, G4double refl)
+  {
+    G4double E2[2] = {2.0*eV, 3.5*eV};
+
+    eff  = std::clamp(eff,  0.0, 1.0);
+    refl = std::clamp(refl, 0.0, 1.0);
+
+    auto mpt = new G4MaterialPropertiesTable();
+    G4double Eff[2]  = {eff/(1-refl),  eff/(1-refl)};
+    G4double Refl[2] = {refl, refl};
+    mpt->AddProperty("EFFICIENCY",   E2, Eff,  2);
+    mpt->AddProperty("REFLECTIVITY", E2, Refl, 2);
+    return mpt;
+  }
+
+  G4MaterialPropertiesTable* MakePMTMPT(G4double refl)
+  {
+
+    G4double E2[2] = {2.0*eV, 3.5*eV};
+    refl = std::clamp(refl, 0.0, 1.0);
+    G4double Refl[2] = {refl,refl};
+
+    G4int nPoints = 28;
+
+    G4double energy[nPoints] = {
+      1.98*eV, 2.00*eV, 2.01*eV, 2.02*eV, 2.05*eV, 2.09*eV, 2.12*eV,
+      2.17*eV, 2.20*eV, 2.24*eV, 2.30*eV, 2.33*eV, 2.37*eV, 2.38*eV,
+      2.41*eV, 2.45*eV, 2.51*eV, 2.63*eV, 2.69*eV, 2.73*eV, 2.80*eV,
+      2.87*eV, 2.96*eV, 3.06*eV, 3.19*eV, 3.30*eV, 3.44*eV, 3.54*eV
+    };
+
+    G4double efficiency[nPoints] = {
+      0.0158, 0.0184, 0.0212, 0.0241, 0.0295, 0.0373, 0.0450,
+      0.0562, 0.0655, 0.0754, 0.0932, 0.109,  0.126,  0.136,
+      0.153,  0.172,  0.184,  0.215,  0.228,  0.233,  0.244,
+      0.256,  0.268,  0.271,  0.275,  0.281,  0.281,  0.281
+    };
+
+    G4double effCorrected[nPoints];
+
+    for (G4int i = 0; i < nPoints; ++i) {
+      effCorrected[i] = efficiency[i] / (1.0 - refl);
+    }
+
+    auto mpt = new G4MaterialPropertiesTable();
+    mpt->AddProperty("EFFICIENCY",energy,effCorrected,nPoints);
+    mpt->AddProperty("REFLECTIVITY", E2, Refl, 2);
+    return mpt;
+  }
+
+  
+  G4MaterialPropertiesTable* MakeSiPMMPT(G4double refl)
+  {
+
+    G4double E2[2] = {2.0*eV, 3.5*eV};
+    refl = std::clamp(refl, 0.0, 1.0);
+    G4double Refl[2] = {refl,refl};
+    G4int nPoints = 32;
+
+    G4double energy[nPoints] = {
+      2.00*eV, 2.03*eV, 2.07*eV, 2.11*eV, 2.14*eV, 2.18*eV, 2.21*eV, 2.26*eV,
+      2.30*eV, 2.32*eV, 2.36*eV, 2.40*eV, 2.43*eV, 2.46*eV, 2.49*eV, 2.56*eV,
+      2.63*eV, 2.71*eV, 2.78*eV, 2.87*eV, 2.96*eV, 3.05*eV, 3.12*eV, 3.17*eV,
+      3.22*eV, 3.22*eV, 3.26*eV, 3.32*eV, 3.38*eV, 3.42*eV, 3.46*eV, 3.50*eV
+    };
+
+    G4double efficiency[nPoints] = {
+      0.241, 0.253, 0.264, 0.279, 0.291, 0.305, 0.315, 0.329,
+      0.344, 0.352, 0.360, 0.370, 0.378, 0.383, 0.388, 0.395,
+      0.401, 0.402, 0.398, 0.390, 0.378, 0.361, 0.351, 0.340,
+      0.323, 0.315, 0.305, 0.286, 0.271, 0.256, 0.242, 0.229
+    };
+
+    G4double effCorrected[nPoints];
+
+    for (G4int i = 0; i < nPoints; ++i) {
+      effCorrected[i] = efficiency[i] / (1.0 - refl);
+    }
+
+    auto mpt = new G4MaterialPropertiesTable();
+    mpt->AddProperty("EFFICIENCY",energy,effCorrected,nPoints);
+    mpt->AddProperty("REFLECTIVITY", E2, Refl, 2);
+    return mpt;
+  }
+
+  G4MaterialPropertiesTable* MakeESRMPT()
+  {
+    auto mpt = new G4MaterialPropertiesTable();
+    mpt->AddProperty("REFLECTIVITY", kESR_E, kESR_R, kNESR);
+
+    // Explicitly set efficiency to 0 across the same grid
+    std::vector<G4double> Eff(kNESR, 0.0);
+    mpt->AddProperty("EFFICIENCY", kESR_E, Eff.data(), kNESR);
+
+    // If you use unified model and want specular behavior:
+    mpt->AddConstProperty("SPECULARSPIKECONSTANT", 1.0, true);
+    mpt->AddConstProperty("SPECULARLOBECONSTANT",  0.0, true);
+    mpt->AddConstProperty("BACKSCATTERCONSTANT",   0.0, true);
+
+    return mpt;
+  }
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -77,7 +213,8 @@ DetectorConstruction::DetectorConstruction()
   fAbsorberThickness = 75.*mm;
   fAbsorberSizeYZ    = 47.*mm;
   fXposAbs           = 0.*cm;
-  fiberLength = 5.*cm;
+  fiberDiameter = 12.7*cm;
+  fiberLength = fiberDiameter;
   ComputeGeomParameters();
   
   // materials  
@@ -89,22 +226,22 @@ DetectorConstruction::DetectorConstruction()
   auto* lAr = G4NistManager::Instance()->FindOrBuildMaterial("G4_lAr");
   //auto* lAr = G4NistManager::Instance()->FindOrBuildMaterial("G4_PLASTIC_SC_VINYLTOLUENE");
 
-  std::vector<G4double> energy     = {9.69*eV,9.89*eV,10.0*eV};
+  std::vector<G4double> energy     = {9.5*eV,9.69*eV,9.89*eV,10.0*eV};
   // refractive index from Collins [https://indico.cern.ch/event/609440/contributions/2548164/attachments/1441824/2220090/Light_Propagation_in_Liquid_Argon.pdf]
-  std::vector<G4double> rindex     = {1.42,1.43,1.44};
+  std::vector<G4double> rindex     = {1.4,1.42,1.43,1.44};
   // taking the value of 1ppm C impurities in lAr with cross section 1Mbarn per molecule
   // absorption length falls linearly with impurity concentration , cross section per molecule
-  G4double absLen = 30.5*m;
-  absorptionLength = {absLen, absLen, absLen};
+  G4double absLen = 1.5*m;
+  absorptionLength = {absLen, absLen, absLen,absLen};
 
   G4MaterialPropertiesTable* MPT = new G4MaterialPropertiesTable();
 
   // property independent of energy
 
   Run* run = static_cast<Run*>(G4RunManager::GetRunManager()->GetNonConstCurrentRun());
-  tpb = 0.02;
+  tpb = 0.266;
   // Doke et al. , NIMA 291,3(1990) [https://www.sciencedirect.com/science/article/pii/016890029090011T?via%3Dihub] 
-  MPT->AddConstProperty("SCINTILLATIONYIELD", tpb*51300./MeV);
+  MPT->AddConstProperty("SCINTILLATIONYIELD", 0.01*51300./MeV);
   MPT->AddProperty("RINDEX", energy, rindex);
   MPT->AddProperty("ABSLENGTH", energy, absorptionLength);
 
@@ -122,10 +259,12 @@ DetectorConstruction::DetectorConstruction()
   // [Creus et al. , JINST 10 (2015) ] - 1600ns
   MPT->AddConstProperty("SCINTILLATIONTIMECONSTANT2", 1500. * ns);
   // values taken from [https://indico.cern.ch/event/44566/contributions/1101918/attachments/943057/1337650/dipompeo.pdf] - yield fraction = 0.75 in old geant4 version
-  MPT->AddConstProperty("SCINTILLATIONYIELD1", 0.75);
-  MPT->AddConstProperty("SCINTILLATIONYIELD2", 0.25);
-  MPT->AddProperty("SCINTILLATIONCOMPONENT1", energy, { 1.0, 1.0, 1.0 });
-  MPT->AddProperty("SCINTILLATIONCOMPONENT2", energy, { 1.0, 1.0, 1.0 });
+  MPT->AddConstProperty("SCINTILLATIONYIELD1", 1.0); // speed up tof simulation, only fast component
+  MPT->AddConstProperty("SCINTILLATIONYIELD2", 0.0);
+  std::vector<G4double> eVUV   = {9.50*eV, 9.65*eV, 9.70*eV, 9.80*eV, 9.90*eV};
+  std::vector<G4double> relVUV = {0.00,    0.50,    1.00,    0.50,    0.00   };
+  MPT->AddProperty("SCINTILLATIONCOMPONENT1", eVUV, relVUV);
+  MPT->AddProperty("SCINTILLATIONCOMPONENT2", eVUV, relVUV);
 
   lAr->SetMaterialPropertiesTable(MPT);
 
@@ -138,7 +277,11 @@ DetectorConstruction::DetectorConstruction()
  lAr->GetIonisation()->SetBirksConstant(birks);
   std::cout << "lAr Ion Pair Mean Energy = " << lAr->GetIonisation()->GetMeanEnergyPerIonPair()/CLHEP::eV << " eV" << std::endl;
   if(innerCellLogic) { innerCellLogic->SetMaterial(lAr); }
+
   G4RunManager::GetRunManager()->PhysicsHasBeenModified();
+
+  //auto nav = G4TransportationManager::GetTransportationManager()->GetNavigatorForTracking();
+  //nav->SetPushThreshold(1e-4*CLHEP::mm); // 0.1 µm-ish nudge
 
   //SetAbsorberMaterial("G4_lAr");
  //   fLogicAbsorber->SetMaterial(lAr);
@@ -153,6 +296,17 @@ DetectorConstruction::DetectorConstruction()
 DetectorConstruction::~DetectorConstruction()
 { 
   delete fDetectorMessenger;
+}
+
+void DetectorConstruction::UpdateOuterCellSize(G4double d) {
+  outerDiameter = d;
+  auto rm = G4RunManager::GetRunManager();
+  G4GeometryManager::GetInstance()->OpenGeometry();
+  G4PhysicalVolumeStore::GetInstance()->Clean();
+  G4LogicalVolumeStore::GetInstance()->Clean();
+  G4SolidStore::GetInstance()       ->Clean();
+  rm->DefineWorldVolume( Construct() );
+  rm->GeometryHasBeenModified();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -181,7 +335,32 @@ void DetectorConstruction::DefineMaterials()
   G4Element* I  = new G4Element("Iodine",  symbol="I" , z=53, a= 126.90*g/mole);
   G4Element* Xe = new G4Element("Xenon",   symbol="Xe", z=54, a= 131.29*g/mole);
 
+  
+  std::vector<G4double> energy3     = {1.5*eV,9.69*eV,9.89*eV,10.0*eV};
+  std::vector<G4double> rindex3     = {1.4,1.42,1.43,1.44};
+  G4double absLen3 = 1.5*m;
+  std::vector<G4double> absorptionLength3 = {absLen3, absLen3, absLen3,absLen3};
+
+
+  // Material properties (transport only)
+  auto* lAr_noScint = new G4Material("LAr_NoScint", 1.390*g/cm3, 1);
+  lAr_noScint->AddElement(Ar, 1);
+
+  auto* mptNoScint = new G4MaterialPropertiesTable();
+  mptNoScint->AddProperty("RINDEX", energy3, rindex3);
+  mptNoScint->AddProperty("ABSLENGTH", energy3, absorptionLength3);
+  lAr_noScint->SetMaterialPropertiesTable(mptNoScint);
+  noScintMaterial = lAr_noScint;
+
   Al = new G4Material("Aluminium", z=13, a=26.98*g/mole, density= 2.700*g/cm3);
+  auto* mptAL = new G4MaterialPropertiesTable();
+  std::vector<G4double> energies = {1.5*eV,10.0*eV};
+  std::vector<G4double> rindices = {1.0,1.0};
+  std::vector<G4double> absLens = {7.*nm,7.*nm};
+  mptAL->AddProperty("RINDEX",energies,rindices);
+  mptAL->AddProperty("ABSLENGTH",energies,absLens);
+  Al->SetMaterialPropertiesTable(mptAL);
+
   new G4Material("Silicon"  , z=14, a=28.09*g/mole, density= 2.330*g/cm3);
 
   G4Material* lAr = 
@@ -192,6 +371,19 @@ void DetectorConstruction::DefineMaterials()
   Air->AddElement(N, fractionmass=0.7);
   Air->AddElement(O, fractionmass=0.3);
 
+  auto airMPT = new G4MaterialPropertiesTable();
+
+  // Cover your visible band (adjust if you need wider/narrower)
+  const G4double eMin = 1.5*CLHEP::eV;   // ~ 830 nm
+  const G4double eMax = 10.2*CLHEP::eV;   // ~ 100 nm
+  G4double ephoton[2] = { eMin, eMax };
+
+  // Dry air ~1.00027 in visible; using a flat value is fine
+  G4double rindexAir[2] = { 1.00027, 1.00027 };
+
+  airMPT->AddProperty("RINDEX", ephoton, rindexAir, 2);
+  Air->SetMaterialPropertiesTable(airMPT);
+
   // Scintillator
 
   G4Material* Sci =
@@ -201,14 +393,14 @@ void DetectorConstruction::DefineMaterials()
      
   Sci->GetIonisation()->SetBirksConstant(0.126*mm/MeV);
 
-  std::vector<G4double> energy     = {9.5*eV,9.6*eV,9.7*eV};
+  std::vector<G4double> energy     = {9.5*eV,9.6*eV,10.0*eV};
   std::vector<G4double> rindex     = {1.42,1.43,1.44};
-  std::vector<G4double> absorptionLength2 = {150.*cm, 150.*cm, 150.*cm};
+  std::vector<G4double> absorptionLength2 = {1500.*cm, 1500.*cm, 1500.*cm};
 
   G4MaterialPropertiesTable* MPT2 = new G4MaterialPropertiesTable();
 
 
-  MPT2->AddConstProperty("SCINTILLATIONYIELD", 12000./MeV);
+  MPT2->AddConstProperty("SCINTILLATIONYIELD", 10000./MeV);
   MPT2->AddProperty("RINDEX", energy, rindex);
   MPT2->AddProperty("ABSLENGTH", energy, absorptionLength2);
 
@@ -222,7 +414,74 @@ void DetectorConstruction::DefineMaterials()
   Sci->SetMaterialPropertiesTable(MPT2);
   fiberMat = Sci;
 
-  //
+  auto TPB  = new G4Material("TPB", 1.20*g/cm3, 2);   // ~1.2 g/cc
+  TPB->AddElement(C, 28);
+  TPB->AddElement(H, 22);
+  
+  // --- TPB Material Properties Table (ascending energies; up to 10 eV) ---
+  auto mptTPB = new G4MaterialPropertiesTable();
+  
+  // 1) Refractive index (kept flat here; supply dispersion if you have it)
+  {
+    static const G4int N = 12;
+    static G4double E[N] = {
+      1.50*eV, 2.00*eV, 2.50*eV, 3.00*eV, 3.50*eV, 4.00*eV,
+      5.00*eV, 6.00*eV, 7.00*eV, 8.00*eV, 9.00*eV, 10.00*eV
+    }; // strictly ascending (≈827 nm → 124 nm)
+  
+    static G4double n[N] = {
+      1.65, 1.65, 1.65, 1.65, 1.65, 1.65,
+      1.65, 1.65, 1.65, 1.65, 1.65, 1.65
+    };
+    mptTPB->AddProperty("RINDEX", E, n, N);
+  }
+  
+  // 2) WLS absorption length (short in VUV; long in visible)
+  //    Controls P_absorb together with your TPB film thickness.
+  {
+    static const G4int N = 12;
+    static G4double E[N] = {
+      1.50*eV, 2.00*eV, 2.50*eV, 3.00*eV, 3.50*eV, 4.00*eV,
+      5.00*eV, 6.00*eV, 7.00*eV, 8.00*eV, 9.70*eV, 10.00*eV
+    }; // ascending up to ≥ 128 nm (9.7 eV) and 124 nm (10 eV)
+  
+    static G4double L[N] = {
+      10.*m, 10.*m, 10.*m, 10.*m, 10.*m, 5.*m,   // visible/near-UV ≫ film thickness
+      1.*m,  1.*mm, 0.20*um, 0.18*um, 0.12*um, 0.10*um  // strong VUV absorption
+    };
+    mptTPB->AddProperty("WLSABSLENGTH", E, L, N);
+  }
+  
+  // 3) WLS emission spectrum (visible band; zeros elsewhere)
+  //    Shape peaked ~420–430 nm; values are relative (Geant4 normalizes internally).
+  {
+    // TPB emission (relative)
+    G4int nTPB = 38;
+    G4double tpbE[nTPB] = {
+      2.304*eV, 2.323*eV, 2.345*eV, 2.364*eV, 2.388*eV, 2.410*eV, 2.429*eV, 2.453*eV, 2.476*eV, 2.498*eV,
+      2.522*eV, 2.545*eV, 2.572*eV, 2.594*eV, 2.620*eV, 2.647*eV, 2.672*eV, 2.700*eV, 2.726*eV, 2.755*eV,
+      2.785*eV, 2.815*eV, 2.844*eV, 2.873*eV, 2.905*eV, 2.952*eV, 2.999*eV, 3.033*eV, 3.069*eV, 3.106*eV,
+      3.140*eV, 3.179*eV, 3.212*eV, 3.256*eV, 3.297*eV, 3.380*eV, 3.417*eV, 3.467*eV
+    };
+    G4double tpbWLS[nTPB] = {
+      0.020, 0.063, 0.072, 0.081, 0.120, 0.133, 0.173, 0.203, 0.183, 0.171,
+      0.216, 0.259, 0.290, 0.323, 0.373, 0.427, 0.556, 0.558, 0.632, 0.709,
+      0.786, 0.832, 0.869, 0.909, 0.952, 1.000, 0.933, 0.816, 0.685, 0.486,
+      0.278, 0.102, 0.053, 0.017, 0.050, 0.026, 0.011, 0.014
+    };
+    mptTPB->AddProperty("WLSCOMPONENT", tpbE, tpbWLS, nTPB);
+  }
+  
+  // 4) WLS timing + intrinsic yield (“QE”)
+  //    Set the mean photons emitted per photon absorbed (≤ 1 for PLQY).
+  mptTPB->AddConstProperty("WLSTIMECONSTANT", 1.7*ns);
+  mptTPB->AddConstProperty("WLSMEANNUMBERPHOTONS", 1.0); // e.g. 70% intrinsic yield
+  
+  TPB->SetMaterialPropertiesTable(mptTPB);
+
+  tpbMat = TPB;
+  
+    //
   // example of vacuum
   //
   density     = universe_mean_density;    //from PhysicalConstants.h
@@ -253,6 +512,8 @@ void DetectorConstruction::ComputeGeomParameters()
   
 G4VPhysicalVolume* DetectorConstruction::Construct()
 { 
+
+
   if(nullptr != fPhysiWorld) { return fPhysiWorld; }
   // World
   //
@@ -285,8 +546,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   Air->AddElement(N, fractionmass=0.7);
   Air->AddElement(O, fractionmass=0.3);
 
-  G4double airSizeX = fWorldSizeX/2;
-  G4double airSizeYZ = fWorldSizeYZ/2;
+  G4double airSizeX = fWorldSizeX/2-1.*m;
+  G4double airSizeYZ = fWorldSizeYZ/2-1.*m;
 
 
   airSolid = new G4Box("air",
@@ -345,7 +606,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   outerCellSolid = new G4Tubs("outerCell",0., outerDiameter/2, outerHeight/2, 0., 360. * deg);
 
   outerCellLogic = new G4LogicalVolume(outerCellSolid,    //its solid
-                                       fAbsorberMaterial, //its material
+                                       noScintMaterial, //its material
                                        "outerCell");       //its name
 
   outerCellPhysi = new G4PVPlacement(transform1,
@@ -427,78 +688,111 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   std::cout << "after inner layer" << std::endl;
 
 
-  //G4OpticalSurface* OpSurface = new G4OpticalSurface("name");
-  //G4LogicalBorderSurface* Surface = new G4LogicalBorderSurface("name",fPhysiAbsorber,fPhysiTeflon,OpSurface);
+  G4OpticalSurface* OpSurface = new G4OpticalSurface("name");
+  //G4LogicalBorderSurface* Surface = new G4LogicalBorderSurface("name",innerCellPhysi,innerLayerPhysi,OpSurface);
 
-  //OpSurface->SetType(dielectric_metal);
-  //OpSurface->SetModel(unified);
-  //OpSurface->SetFinish(polished);
-  //OpSurface->SetSigmaAlpha(0.1);
-
-  //std::vector<G4double> pp = {9.6*eV, 10.0*eV};
-  //std::vector<G4double> specularlobe = {0.3, 0.3};
-  //std::vector<G4double> specularspike = {0.2, 0.2};
-  //std::vector<G4double> backscatter = {0.1, 0.1};
+  OpSurface->SetType(dielectric_metal);
+  OpSurface->SetModel(unified);
+  OpSurface->SetFinish(polished);
+  std::vector<G4double> pp = {1.5*eV, 4.0*eV,7.0*eV,10.0*eV};
   //rindex = {1.35, 1.40};
-  //std::vector<G4double> reflectivity = {0.98, 0.98};
-  //std::vector<G4double> efficiency = {1.0, 1.0};
+  std::vector<G4double> reflectivity = {1.0, 1.0,1.0,1.0};
+  //reflectivity = {0.01,0.01,0.01,0.01};
 
-  //G4MaterialPropertiesTable* SMPT = new G4MaterialPropertiesTable();
+  G4MaterialPropertiesTable* SMPT = new G4MaterialPropertiesTable();
 
   //SMPT->AddProperty("RINDEX", pp, rindex);
-  //SMPT->AddProperty("SPECULARLOBECONSTANT", pp, specularlobe);
-  //SMPT->AddProperty("SPECULARSPIKECONSTANT", pp, specularspike);
-  //SMPT->AddProperty("BACKSCATTERCONSTANT", pp, backscatter);
-  //SMPT->AddProperty("REFLECTIVITY", pp, reflectivity);
-  //SMPT->AddProperty("EFFICIENCY", pp, efficiency);
+  SMPT->AddProperty("REFLECTIVITY", pp, reflectivity);
 
-  //OpSurface->SetMaterialPropertiesTable(SMPT);
- 
+  OpSurface->SetMaterialPropertiesTable(SMPT);
+  //new G4LogicalSkinSurface("skinInnerLayer",innerLayerLogic,OpSurface);
 
-  // ORGANIC SCINTILLATOR
-  //std::cout << "fiber length = " << fiberLength/CLHEP::cm << " cm" << std::endl;
-  //std::cout << "fiber diameter = " << fiberDiameter/CLHEP::cm << " cm" << std::endl;
+  // Top/Bottom optical planes (same radius as inner cell), placed flush
+  auto planeMat = Al; // any bulk; detection is on surface
+  auto r = innerDiameter/2;
+  auto t = 1.5*mm;
+
+  auto topSolid = new G4Tubs("TopPlane", 0, r, t/2, 0, CLHEP::twopi);
+  auto botSolid = new G4Tubs("BotPlane", 0, r, t/2, 0, CLHEP::twopi);
+  auto topLV = new G4LogicalVolume(topSolid, planeMat, "TopPlaneLV");
+  auto botLV = new G4LogicalVolume(botSolid, planeMat, "BotPlaneLV");
+
+  auto topPV = new G4PVPlacement(nullptr, {0, 0, +innerHeight/2 + t/2}, topLV, "TopPlanePV", outerCellLogic, false, 0);
+  auto botPV = new G4PVPlacement(nullptr, {0, 0, -innerHeight/2 - t/2}, botLV, "BotPlanePV", outerCellLogic, false, 0);
+
+  new G4LogicalSkinSurface("skinTop",topLV,OpSurface);
+  new G4LogicalSkinSurface("skinBot",botLV,OpSurface);
+
+
+  auto mkReflector = [&](const char* name){
+      auto s = new G4OpticalSurface(name);
+      s->SetType(dielectric_metal);
+      s->SetModel(unified);
+      s->SetFinish(polished);
+      auto mpt = new G4MaterialPropertiesTable();
+      // Example: flat 95% reflectivity in visible; add your spectrum
+      G4double e[4] = {1.5*eV, 4.0*eV,7.0*eV,10.0*eV};
+      G4double R[4] = {1.0, 1.0,1.0,1.0};
+      mpt->AddProperty("REFLECTIVITY", e, R, 2);
+      s->SetMaterialPropertiesTable(mpt);
+      return s;
+  };
+  auto reflTop = mkReflector("ReflTop");
+  auto reflBot = mkReflector("ReflBot");
+
+  // TPB Volumes
+  const G4double tTPB    = 1.5*um;     // ~1–3 µm film is typical
+  const G4double inset = 1.0*mm; // instead of 5 um
+
+  // mother: LAr logical volume is LArLV (you already have it)
   
-  //svol_fiber = new G4Tubs("fiber",                      //name
-                         //0*mm, 0.5*fiberDiameter,       //r1, r2
-                         //0.5*fiberLength,               //half-length
-                         //0., twopi);                    //theta1, theta2
-
-  //lvol_fiber = new G4LogicalVolume(svol_fiber,          //solid
-    //fiberMat,            //material
-      //"fiber");            //name
-
-
-  // rotation around y axis
-  // u, v, w are the daughter axes, projected on the mother frame
-  //G4double rotationAngle = pi/2 - pi/2;
-  //u = G4ThreeVector(std::cos(rotationAngle) , 0, std::sin(rotationAngle));
-  //v = G4ThreeVector(0 , 1, 0);
-  //w = G4ThreeVector(std::sin(-rotationAngle), 0, std::cos(rotationAngle)); 
-
-
-  // rotation around x axis
-  //u = G4ThreeVector(1,0,0);
-  //v = G4ThreeVector(0,std::cos(rotationAngle),std::sin(-rotationAngle));
-  //w = G4ThreeVector(0,std::sin(rotationAngle),std::cos(rotationAngle));
+  // Side coating: a thin cylindrical shell hugging the wall
+  auto tpbSideSolid = new G4Tubs("TPB_Side", r - tTPB - inset, r - inset, 0.5*innerHeight - tTPB - inset, 0.*deg, 360.*deg);
+  auto tpbSideLV    = new G4LogicalVolume(tpbSideSolid, tpbMat, "TPB_Side_LV");
+  auto tpbSidePV = new G4PVPlacement(nullptr, G4ThreeVector(), tpbSideLV, "TPB_Side_PV", innerCellLogic, true, 0);
+  
+  // Bottom disk
+  auto tpbBotSolid = new G4Tubs("TPB_Bot", 0., r, 0.5*tTPB, 0.*deg, 360.*deg);
+  auto tpbBotLV    = new G4LogicalVolume(tpbBotSolid, tpbMat, "TPB_Bot_LV");
+  auto tpbBotPV = new G4PVPlacement(nullptr, G4ThreeVector(0,0,-0.5*innerHeight + 0.5*tTPB + inset ), tpbBotLV,"TPB_Bot_PV", innerCellLogic, true, 0);
+  
+  // Top disk
+  auto tpbTopSolid = new G4Tubs("TPB_Top", 0., r, 0.5*tTPB, 0.*deg, 360.*deg);
+  auto tpbTopLV    = new G4LogicalVolume(tpbTopSolid, tpbMat, "TPB_Top_LV");
+  auto tpbTopPV = new G4PVPlacement(nullptr, G4ThreeVector(0,0, +0.5*innerHeight - 0.5*tTPB - inset), tpbTopLV,"TPB_Top_PV", innerCellLogic, true, 0);
  
-  //G4RotationMatrix rotm2  = G4RotationMatrix(u, v, w);
-  //G4ThreeVector position2 = G4ThreeVector(1.3*m,0.*cm,0);
+  // BUILDING PMTs + SiPMs configurations
+  BuildPMTPatches();
+  BuildSiPMPatches();
 
-  //std::cout << "position before rotation = " << position2 << std::endl;
-  //position2 = rotateAroundY(position2,pi/2);
-  //std::cout << "position after rotation = " << position2 << std::endl;
-  //const G4Transform3D & transform2 = G4Transform3D(rotm2,position2);
+  ApplySensorConfig();
+ 
+  //auto tpbUnion1 = new G4UnionSolid("TPB_union", tpbSideSolid, tpbTopSolid, nullptr, G4ThreeVector(0,0, +0.5*innerHeight - 0.5*tTPB - inset));
+  //auto tpbUnion  = new G4UnionSolid("TPB_union2", tpbUnion1, tpbBotSolid, nullptr, G4ThreeVector(0,0,-0.5*innerHeight + 0.5*tTPB + inset ));
+
+  //auto tpbLV = new G4LogicalVolume(tpbUnion, tpbMat, "TPB_LV");
+  //auto tpbPV = new G4PVPlacement(nullptr, {}, tpbLV, "TPB_PV", innerCellLogic, true, 0);
+
+  //new G4LogicalBorderSurface("LAr->Top",  tpbPV, topPV, reflTop);
+  //new G4LogicalBorderSurface("LAr->Bot",  tpbPV, botPV, reflBot);
+
+  // placing liquid scintillators at different angles to detect neutrons
+  G4double angleArr[5] = {0.4363,0.6981,0.8727,1.0472,1.5708};
+  G4double distances[5] = {1.0*m,1.0*m,1.0*m,1.0*m,1.0*m};
+  G4ThreeVector vectArr[5];
+  for(int i = 0;i<=4;i++){
+      vectArr[i] = G4ThreeVector(distances[i],0.,0.);
+  }   
+
+  for(int i = 0;i<=4;i++){
+      std::stringstream ss;
+      ss << "A" << i;
+      std::string fibName = ss.str();
+      std::cout << "fiber diameter = " << fiberDiameter << " cm" << std::endl;
+      placeLiquidScintillator(vectArr[i],angleArr[i],fiberDiameter,fiberLength,fiberMat,airLogic,fibName);
+  } 
 
 
- //pvol_fiber = new G4PVPlacement(transform2,
-                                //lvol_fiber,                    //its logical volume
-                                //"liquidScintillator",          //its name
-                                //airLogic,                      //its mother
-                                //false,                         //no boulean operat
-                                //0); 
-
- std::vector<G4VisAttributes*> fVisAttributes;
  auto visAttributes = new G4VisAttributes(G4Colour(1.,1.,1.)); // world is white
  //visAttributes->SetVisibility(false);
  //visAttributes->SetVisibility(true);
@@ -507,28 +801,56 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
  fVisAttributes.push_back(visAttributes);                                     
 
  visAttributes = new G4VisAttributes(G4Colour(0.9,0.9,1.6));   // make inner LAr detector dark grey
- visAttributes->SetVisibility(true);
+ //visAttributes->SetVisibility(false);
  visAttributes->SetForceSolid(true);
  innerCellLogic->SetVisAttributes(visAttributes);
  fVisAttributes.push_back(visAttributes);
 
  visAttributes = new G4VisAttributes(G4Colour(1.0,1.0,0.0));   // make Aluminium Layer yellow
- visAttributes->SetVisibility(true);
+ //visAttributes->SetVisibility(false);
  visAttributes->SetForceSolid(true);
  innerLayerLogic->SetVisAttributes(visAttributes);
  fVisAttributes.push_back(visAttributes);
 
  visAttributes = new G4VisAttributes(G4Colour(0.4,0.4,0.4,0.9));   // make outer LAr detector dark grey and opaque
+ visAttributes->SetForceSolid(true);
  outerCellLogic->SetVisAttributes(visAttributes);
  fVisAttributes.push_back(visAttributes);
 
  visAttributes = new G4VisAttributes(G4Colour(0.9,0.1,0.9,0.6));  // make outer layer one some colour
+ visAttributes->SetForceSolid(true);
  outerLayerOneLogic->SetVisAttributes(visAttributes);
  fVisAttributes.push_back(visAttributes);
 
  visAttributes = new G4VisAttributes(G4Colour(0.7,0.9,0.8,0.4));  // make outer layer two some colour
+ visAttributes->SetForceSolid(true);
  outerLayerTwoLogic->SetVisAttributes(visAttributes);
  fVisAttributes.push_back(visAttributes);
+
+ visAttributes = new G4VisAttributes(G4Colour(0.7,0.9,0.8,0.4));
+ //visAttributes->SetVisibility(false);
+ topLV->SetVisAttributes(visAttributes);
+ fVisAttributes.push_back(visAttributes);
+
+ visAttributes = new G4VisAttributes(G4Colour(0.7,0.9,0.8,0.4));
+ //visAttributes->SetVisibility(false);
+ botLV->SetVisAttributes(visAttributes);
+ fVisAttributes.push_back(visAttributes);
+
+ //visAttributes = new G4VisAttributes(G4Colour(0.7,0.9,0.8,0.4));
+ //visAttributes->SetVisibility(false);
+ //tpbBotLV->SetVisAttributes(visAttributes);
+ //fVisAttributes.push_back(visAttributes);
+
+ //visAttributes = new G4VisAttributes(G4Colour(0.7,0.9,0.8,0.4));
+ //visAttributes->SetVisibility(false);
+ //tpbTopLV->SetVisAttributes(visAttributes);
+ //fVisAttributes.push_back(visAttributes);
+
+ //visAttributes = new G4VisAttributes(G4Colour(0.7,0.9,0.8,0.4));
+ //visAttributes->SetVisibility(false);
+ //tpbSideLV->SetVisAttributes(visAttributes);
+ //fVisAttributes.push_back(visAttributes);
 
  //visAttributes = new G4VisAttributes(G4Colour(0.19,0.83,0.78));   // make liquid scintilator turquoise
  //new_lvol_fiber->SetVisAttributes(visAttributes);
@@ -540,6 +862,62 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
  // PrintGeomParameters();         
   
+  // ===================== Region-based production cuts =====================
+
+// Inner LAr: keep dE/dx → scintillation; suppress soft EM secondaries.
+{
+ auto innerReg  = new G4Region("InnerLArRegion");
+ innerReg->AddRootLogicalVolume(innerCellLogic);
+
+// auto innerCuts = new G4ProductionCuts();
+// innerCuts->SetProductionCut(5.0*CLHEP::mm, G4ProductionCuts::GetIndex("gamma"));
+// innerCuts->SetProductionCut(5.0*CLHEP::mm, G4ProductionCuts::GetIndex("e-"));
+// innerCuts->SetProductionCut(5.0*CLHEP::mm, G4ProductionCuts::GetIndex("e+"));
+// innerCuts->SetProductionCut(5.0*CLHEP::mm, G4ProductionCuts::GetIndex("proton"));
+// innerReg->SetProductionCuts(innerCuts);
+}
+
+// Outer LAr: very aggressive cuts (no EM analysis there).
+{
+ auto outerLArReg  = new G4Region("OuterLArRegion");
+ outerLArReg->AddRootLogicalVolume(outerCellLogic);
+
+// auto outerLArCuts = new G4ProductionCuts();
+// outerLArCuts->SetProductionCut(5.0*CLHEP::cm, G4ProductionCuts::GetIndex("gamma"));
+// outerLArCuts->SetProductionCut(5.0*CLHEP::cm, G4ProductionCuts::GetIndex("e-"));
+// outerLArCuts->SetProductionCut(5.0*CLHEP::cm, G4ProductionCuts::GetIndex("e+"));
+// outerLArCuts->SetProductionCut(5.0*CLHEP::cm, G4ProductionCuts::GetIndex("proton"));
+// outerLArReg->SetProductionCuts(outerLArCuts);
+}
+
+// Air/world: huge cuts (don’t waste time on EM in air).
+{
+ auto airReg  = new G4Region("AirRegion");
+ airReg->AddRootLogicalVolume(airLogic);
+
+// auto airCuts = new G4ProductionCuts();
+// airCuts->SetProductionCut(1.0*CLHEP::mm, G4ProductionCuts::GetIndex("gamma"));
+// airCuts->SetProductionCut(1.0*CLHEP::mm, G4ProductionCuts::GetIndex("e-"));
+// airCuts->SetProductionCut(1.0*CLHEP::mm, G4ProductionCuts::GetIndex("e+"));
+// airCuts->SetProductionCut(0.01*CLHEP::mm, G4ProductionCuts::GetIndex("proton"));
+// airReg->SetProductionCuts(airCuts);
+}
+
+//Steel shells: big cuts (no EM detail needed there).
+{
+ auto steelReg  = new G4Region("SteelRegion");
+ steelReg->AddRootLogicalVolume(outerLayerOneLogic);
+ steelReg->AddRootLogicalVolume(outerLayerTwoLogic);
+
+// auto steelCuts = new G4ProductionCuts();
+// steelCuts->SetProductionCut(1.0*CLHEP::cm, G4ProductionCuts::GetIndex("gamma"));
+// steelCuts->SetProductionCut(1.0*CLHEP::cm, G4ProductionCuts::GetIndex("e-"));
+// steelCuts->SetProductionCut(1.0*CLHEP::cm, G4ProductionCuts::GetIndex("e+"));
+// steelCuts->SetProductionCut(1.0*CLHEP::cm, G4ProductionCuts::GetIndex("proton"));
+// steelReg->SetProductionCuts(steelCuts);
+}
+// =======================================================================
+
   //always return the physical World
   //
   return fPhysiWorld;
@@ -678,3 +1056,295 @@ void DetectorConstruction::ChangeGeometry()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+void DetectorConstruction::BuildPMTPatches()
+{
+  // --- geometry numbers ---
+  const G4double tile = 2.05*cm;
+  const G4double half = 0.5*tile;
+  const G4double thick = 0.1*mm;  // thin patch
+  const G4double eps   = 0.01*mm;  // inset into LAr so it's inside the cell
+
+  const G4double R = 0.5*innerDiameter;
+  const G4double H = innerHeight;
+
+  // sanity: tiles must fit
+  if (tile > 2*R) {
+    G4cout << "[PMT] ERROR: PMT tile bigger than diameter.\n";
+    return;
+  }
+
+  const G4double zTop = +0.5*H - 0.5*thick - eps;
+  const G4double zBot = -0.5*H + 0.5*thick + eps;
+
+  // gap between tiles (optional)
+  const G4double gap = 0.0*mm;
+  const G4double dx = half + 0.5*gap;
+  const G4double dy = half + 0.5*gap;
+
+  // 2x2 centers
+  std::vector<G4ThreeVector> centers = {
+    {+dx,+dy,0}, {+dx,-dy,0}, {-dx,+dy,0}, {-dx,-dy,0}
+  };
+
+  // dummy material; optical behavior is defined by the surface
+  auto dummyMat = G4NistManager::Instance()->FindOrBuildMaterial("G4_Galactic");
+
+  auto solid = new G4Box("PMTtileSolid", half, half, 0.5*thick);
+  auto lv    = new G4LogicalVolume(solid, dummyMat, "PMTtileLV");
+
+  fTopPMT_PV.clear(); fBotPMT_PV.clear();
+  fTopPMT_Surf.clear(); fBotPMT_Surf.clear();
+
+  for (int i=0;i<4;i++) {
+    auto pvT = new G4PVPlacement(
+      nullptr,
+      centers[i] + G4ThreeVector(0,0,zTop),
+      lv,
+      "PMTtileTopPV",
+      innerCellLogic,
+      false,
+      i,
+      false
+    );
+    auto pvB = new G4PVPlacement(
+      nullptr,
+      centers[i] + G4ThreeVector(0,0,zBot),
+      lv,
+      "PMTtileBotPV",
+      innerCellLogic,
+      false,
+      i,
+      false
+    );
+
+    fTopPMT_PV.push_back(pvT);
+    fBotPMT_PV.push_back(pvB);
+
+    auto sTop = new G4OpticalSurface(("PMTsurfTop_"+std::to_string(i)).c_str());
+    auto sBot = new G4OpticalSurface(("PMTsurfBot_"+std::to_string(i)).c_str());
+
+    for (auto s : {sTop, sBot}) {
+      s->SetType(dielectric_metal);
+      s->SetModel(unified);
+      s->SetFinish(polished);
+ 
+      auto mptESR = MakeESRMPT();
+      s->SetMaterialPropertiesTable(mptESR);
+    }
+
+    fTopPMT_Surf.push_back(sTop);
+    fBotPMT_Surf.push_back(sBot);
+
+    // Attach border surfaces (both directions)
+    new G4LogicalBorderSurface(
+      ("LAr_to_PMTtop_"+std::to_string(i)).c_str(),
+      innerCellPhysi,
+      pvT,
+      sTop
+    );
+    new G4LogicalBorderSurface(
+      ("PMTtop_to_LAr_"+std::to_string(i)).c_str(),
+      pvT,
+      innerCellPhysi,
+      sTop
+    );
+
+    new G4LogicalBorderSurface(
+      ("LAr_to_PMTbot_"+std::to_string(i)).c_str(),
+      innerCellPhysi,
+      pvB,
+      sBot
+    );
+    new G4LogicalBorderSurface(
+      ("PMTbot_to_LAr_"+std::to_string(i)).c_str(),
+      pvB,
+      innerCellPhysi,
+      sBot
+    );
+  }
+
+  G4cout << "[PMT] Built 4 top + 4 bottom PMT tiles.\n";
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void DetectorConstruction::BuildSiPMPatches()
+{
+
+  auto dummyMat = G4NistManager::Instance()->FindOrBuildMaterial("G4_Galactic");
+
+  const G4double tile = 0.6*cm;
+  const G4double thick = 0.1*mm; // radial thickness
+  const G4double eps   = 0.01*mm; // inset into LAr
+
+  const G4double R = 0.5*innerDiameter;
+  const G4double H = innerHeight;
+
+  const G4ThreeVector zHat(0,0,1);
+
+  // Max rows that fit
+  const int maxRows = static_cast<int>(std::floor(H / tile));
+  // Tiles around circumference
+  const G4double circumference = 2.0 * CLHEP::pi * R;
+  const int nPhi = static_cast<int>(std::floor(circumference / tile));
+  fSiPM_TilesPerRow = nPhi;
+
+  G4cout << "[SiPM] maxRows=" << maxRows
+         << " tilesPerRow=" << nPhi
+         << " (H=" << H/cm << " cm, R=" << R/cm << " cm)\n";
+
+
+  // Local box: X=tangential, Y=vertical (z), Z=radial thickness
+  auto solid = new G4Box("SiPMtileSolid", 0.5*tile, 0.5*tile, 0.5*thick);
+  auto lv    = new G4LogicalVolume(solid, dummyMat, "SiPMtileLV");
+  
+  auto visAttributes = new G4VisAttributes(G4Colour(1.,1.,1.)); // world is white
+  visAttributes->SetVisibility(true);
+  visAttributes->SetForceSolid(true);
+  lv->SetVisAttributes(visAttributes);
+  fVisAttributes.push_back(visAttributes);
+
+  fSiPM_PV.clear();
+  fSiPM_Surf.clear();
+  fSiPM_RowOfTile.clear();
+
+  const G4double dphi = 2.0 * CLHEP::pi / nPhi;
+
+  for (int iRow=0; iRow<maxRows; ++iRow) {
+
+    const G4double z = -0.5*H + (iRow + 0.5)*tile;
+
+    for (int j=0; j<nPhi; ++j) {
+
+      const G4double phi = j * dphi;
+
+      const G4double x = (R - eps - 0.5*thick) * std::cos(-phi);
+      const G4double y = (R - eps - 0.5*thick) * std::sin(-phi);
+
+      G4ThreeVector pos = G4ThreeVector(x,y,z);
+      
+    // Build rotation: columns = local axes expressed in global coordinates
+    auto rot = new G4RotationMatrix();
+    rot->rotateZ(phi);
+    rot->rotateY(90.0*deg);
+
+      const int copyNo = iRow*nPhi + j;
+
+      auto pv = new G4PVPlacement(
+        rot,
+        pos,
+        lv,
+        "SiPMtilePV",
+        innerCellLogic,
+        false,
+        copyNo,
+        false
+      );
+
+
+      fSiPM_PV.push_back(pv);
+      fSiPM_RowOfTile.push_back(iRow);
+
+      auto s = new G4OpticalSurface(("SiPMsurf_"+std::to_string(copyNo)).c_str());
+      s->SetType(dielectric_metal);
+      s->SetModel(unified);
+      s->SetFinish(polished);
+      
+      auto mptESR = MakeESRMPT();
+      s->SetMaterialPropertiesTable(mptESR);
+      fSiPM_Surf.push_back(s);
+
+      new G4LogicalBorderSurface(
+        ("LAr_to_SiPM_"+std::to_string(copyNo)).c_str(),
+        innerCellPhysi,
+        pv,
+        s
+      );
+      new G4LogicalBorderSurface(
+        ("SiPM_to_LAr_"+std::to_string(copyNo)).c_str(),
+        pv,
+        innerCellPhysi,
+        s
+      );
+    }
+  }
+
+  G4cout << "[SiPM] Built tiles: " << fSiPM_PV.size()
+         << " (rows=" << maxRows << ", perRow=" << nPhi << ")\n";
+}
+
+// ooOOOOooooooooooooooooooooooooooooooooooOOOOOOOOOOOOOOOOOOOooooooooooooooooooooooooooooooooooo
+
+void DetectorConstruction::ApplySensorConfig()
+{
+  // ---------------------------
+  // Clamp configuration knobs
+  // ---------------------------
+  if (fTopPMTs < 0) fTopPMTs = 0;
+  if (fTopPMTs > 4) fTopPMTs = 4;
+
+  if (fBotPMTs < 0) fBotPMTs = 0;
+  if (fBotPMTs > 4) fBotPMTs = 4;
+
+  if (fSiPMRows < 0) fSiPMRows = 0;
+  if (fSiPMRows > 16) fSiPMRows = 16;
+
+  // ---------------------------
+  // Build / rebuild cached MPTs
+  // ---------------------------
+
+  // ESR MPT: build once (inactive behavior)
+  if (!fMPT_ESR) {
+    fMPT_ESR = MakeESRMPT(); // 51-point REFLECTIVITY, EFFICIENCY=0
+  }
+
+  // Top PMT active MPT: rebuild if PDE_top or PMT reflectivity changed
+  if (!fMPT_TopPMT_Active) 
+  {
+    fMPT_TopPMT_Active = MakePMTMPT(fRefl_PMT);
+  }
+
+  // Bottom PMT active MPT: rebuild if PDE_bottom or PMT reflectivity changed
+  if (!fMPT_BotPMT_Active) 
+  {
+    fMPT_BotPMT_Active = MakePMTMPT(fRefl_PMT);
+  }
+
+  // SiPM active MPT: rebuild if PDE_sipm or sipm reflectivity changed
+  if (!fMPT_SiPM_Active) 
+  {
+    fMPT_SiPM_Active = MakeSiPMMPT(fRefl_SiPM);
+  }
+
+  // ---------------------------
+  // Apply to PMT surfaces
+  // ---------------------------
+  for (int i = 0; i < 4; ++i) {
+    const bool topOn = (i < fTopPMTs);
+    const bool botOn = (i < fBotPMTs);
+
+    if (fTopPMT_Surf[i]) {
+      fTopPMT_Surf[i]->SetMaterialPropertiesTable(topOn ? fMPT_TopPMT_Active : fMPT_ESR);
+    }
+    if (fBotPMT_Surf[i]) {
+      fBotPMT_Surf[i]->SetMaterialPropertiesTable(botOn ? fMPT_BotPMT_Active : fMPT_ESR);
+    }
+  }
+
+  // ---------------------------
+  // Apply to SiPM surfaces
+  // ---------------------------
+  for (size_t k = 0; k < fSiPM_Surf.size(); ++k) {
+    const int row = fSiPM_RowOfTile[k];
+    const bool on = (row < fSiPMRows);
+
+    if (fSiPM_Surf[k]) {
+      fSiPM_Surf[k]->SetMaterialPropertiesTable(on ? fMPT_SiPM_Active : fMPT_ESR);
+    }
+  }
+
+  std::cout << "number of active top PMTs: " << fTopPMTs << "\n number of active bottom PMTs: " << fBotPMTs << "\n number of active SiPM rows: " << fSiPMRows << std::endl;
+  G4RunManager::GetRunManager()->PhysicsHasBeenModified();
+}
+
+// oooOOOOOOOOOooooooooooooooooooooooooooooooooooooooOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO

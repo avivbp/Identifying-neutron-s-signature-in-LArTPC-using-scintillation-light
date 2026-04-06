@@ -42,6 +42,12 @@
 #include "Randomize.hh"
 #include "G4SystemOfUnits.hh"
 #include <iomanip>
+#include "G4OpticalParameters.hh"
+#include "G4Electron.hh"
+#include "G4ProcessManager.hh"
+#include "G4VProcess.hh"
+#include "G4Threading.hh"   // only if you use IsMasterThread()
+#include "G4ios.hh"         // for G4cout / G4endl
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -88,8 +94,20 @@ void RunAction::BeginOfRunAction(const G4Run*)
 {
   csvfile << "process,distance" << "," << std::endl;
   // show Rndm status
-  if (isMaster) G4Random::showEngineStatus();
-     
+  if (IsMaster()) {
+      G4Random::showEngineStatus();
+      auto* pm = G4Electron::Electron()->GetProcessManager();
+      auto* p  = pm ? pm->GetProcess("Cerenkov") : nullptr;
+
+      if (p && pm) {
+          G4bool active = pm->GetProcessActivation(p);
+          G4cout << "[Run] Cerenkov process: "
+                 << (active ? "ACTIVE" : "INACTIVE")
+                 << G4endl;
+      }
+
+  }
+ 
   // keep run condition
   if ( fPrimary ) { 
     G4ParticleDefinition* particle 
@@ -104,7 +122,7 @@ void RunAction::BeginOfRunAction(const G4Run*)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void RunAction::EndOfRunAction(const G4Run*)
+void RunAction::EndOfRunAction(const G4Run* grun)
 {  
   csvfile.close();
   // print Run summary
@@ -114,7 +132,37 @@ void RunAction::EndOfRunAction(const G4Run*)
   // save histograms
 
   // show Rndm status
-  if (isMaster) G4Random::showEngineStatus();
+  if (IsMaster()){
+
+      const auto* run = static_cast<const Run*>(grun);
+      // --- TPB validation (minimal) ---
+//      const auto made_in_inner   = run->GetChkCreatedInnerScint();
+//      const auto wls_abs_from_in = run->GetChkWLSAbsFromInner();
+//      const auto wls_emit_from_in= run->GetChkWLSEmitFromInner();
+//
+//      G4cout << "\n=== TPB VALIDATION (Scint in innerCell → WLS in TPB) ===\n"
+//       << "created (Scint, innerCell)        : " << made_in_inner << G4endl
+//       << "WLS absorbed from those tracks    : " << wls_abs_from_in << G4endl
+//       << "WLS emitted photons from those    : " << wls_emit_from_in << G4endl
+//       << std::fixed << std::setprecision(4)
+//       << "ratio (WLS_abs_from_inner / created_inner) = "
+//       << (made_in_inner ? double(wls_abs_from_in)/made_in_inner : 0.0) << G4endl
+//       << "ratio (WLS_emit_from_inner / WLS_abs_from_inner) = "
+//       << (wls_abs_from_in ? double(wls_emit_from_in)/wls_abs_from_in : 0.0) << G4endl;
+//
+
+//    {
+//      std::ofstream out("photHits.csv", std::ios::out | std::ios::trunc);
+//      out << "eventID,trackID,surface,u,v,tAbs\n";       // header
+//      //out << run->GetPhotHitsCSV();                      // payload
+//    }
+//    {
+//      std::ofstream out("evtStats.csv", std::ios::out | std::ios::trunc);
+//      out << "eventID,detector,tOne,numElasticSensitive,numInelasticSensitive,ExtScatter,numInelastic,good\n";
+//      //out << run->GetEvtStatsCSV();
+//    }
+      G4Random::showEngineStatus();
+  }
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

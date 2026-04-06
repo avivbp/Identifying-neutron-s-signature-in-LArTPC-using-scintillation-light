@@ -37,13 +37,50 @@
 #include "globals.hh"
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <stdio.h>
 #include <CLHEP/Vector/ThreeVector.h>
 #include <list>
+#include <sstream>      // NEW
+#include <string>       // NEW
+#include <vector>       // NEW
+#include <unordered_set>
+#include <unordered_map>
+
+
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 class EventAction : public G4UserEventAction
 {
+
+struct WLSHitSig { char s; int u,v,t; };
+inline bool nearly_same(const WLSHitSig& a, const WLSHitSig& b) {
+  if (a.s != b.s) return false;
+  auto d = [](int x,int y){ return std::abs(x-y); };
+  return d(a.u,b.u) <= 1 && d(a.v,b.v) <= 1 && d(a.t,b.t) <= 1; // or <=1 for time too
+}
+
+private:
+  std::unordered_map<int, WLSHitSig> fLastWLSSigByTrack; // trackID -> last signature
+public:
+  inline void ClearWLSDeDupe() { fLastWLSSigByTrack.clear(); }
+  inline bool ShouldLogWLS(int tid, char s, int u, int v, int t) {
+    WLSHitSig cur{ s,u,v,t };
+    auto it = fLastWLSSigByTrack.find(tid);
+    if (it != fLastWLSSigByTrack.end() && nearly_same(it->second, cur)) return false;
+    fLastWLSSigByTrack[tid] = cur;
+    return true;
+  }
+
+// Tracks (IDs) of optical photons born by Scintillation in innerCell (per event)
+private:
+  std::unordered_set<int> fBornInnerScint;
+
+public:
+  inline void ClearBornInnerScint()              { fBornInnerScint.clear(); }
+  inline void MarkBornInnerScint(int tid)        { fBornInnerScint.insert(tid); }
+  inline bool IsBornInnerScint(int tid) const    { return fBornInnerScint.count(tid) > 0; }
+
   public:
     G4int numInteractions;
     G4bool wroteToFile;
@@ -69,6 +106,8 @@ class EventAction : public G4UserEventAction
     G4double CryoScatterAngle;
     G4double CryoEDep;
     G4double innerLayerEDep;
+    G4double innerCellEDep;
+    G4double incomingAng;
     G4bool scatteredNotSensitive;
     G4bool extInelastic;
     G4bool Coincedence;
@@ -76,15 +115,24 @@ class EventAction : public G4UserEventAction
     G4bool aborted;
     G4bool nCapture;
     G4bool secondaryNeutron;
+    G4bool NNPrime;
+    G4bool NP;
+    G4bool NNPrimeP;
+    G4bool N2N;
+    G4bool N3N;
+    std::ostringstream buf_hits;
     G4int ExtScatter;
     G4int CryoScatter;
     G4int innerLayerScatter;
+    G4int numPhotLS;
     CLHEP::Hep3Vector pos0;
     CLHEP::Hep3Vector pos1;
+    G4double fiducialIncomingEn;
     G4double experimentalRecoilEnergy;
     G4double tZeroEx;
     G4double tOneEx;
     G4double tHelp;
+    G4double escapeEn;
     G4int nScint;
     G4int nCher;
     G4int numPhotons;
@@ -99,6 +147,8 @@ class EventAction : public G4UserEventAction
     G4int numSteps;
     G4int numSurface;
     G4int numBases;
+    G4int extScatterBefore;
+    G4int extScatterAfter;
     G4double totEnergy;
     G4double tUp;
     G4double tDown;
@@ -113,9 +163,17 @@ class EventAction : public G4UserEventAction
    ~EventAction();
 
   public:
+
+    void ClearSeenUV() { fSeenUV.clear(); }
+    bool MarkSeenUV(G4int trackID) { return fSeenUV.insert(trackID).second; }
+
     virtual void BeginOfEventAction(const G4Event*);
     virtual void   EndOfEventAction(const G4Event*);
  
+    inline void BufferHitRow(const std::vector<std::string>& fields) {
+    for (size_t i=0;i<fields.size();++i) { if(i) buf_hits<<','; buf_hits<<fields[i]; }
+    buf_hits << '\n';
+    }
     void numInteractionsPP(){numInteractions += 1;};
     void setNPrime(G4bool b){performedNPrime = b;};
     void resetNumInteractions(){numInteractions = 0;};
@@ -145,6 +203,7 @@ class EventAction : public G4UserEventAction
                                              
         
   private:
+    std::unordered_set<G4int> fSeenUV; // TrackIDs of UV photons already counted
     G4double fEnergyDeposit;
     G4double fTrakLenCharged, fTrakLenNeutral;
     G4int    fNbStepsCharged, fNbStepsNeutral;

@@ -38,10 +38,12 @@
 #include "G4Gamma.hh"
 #include "G4Electron.hh"
 #include "G4Positron.hh"
-
+//#include "CsvWriterThreadSafe.hh"
+//#include <memory>
 #include "globals.hh"
 #include <iostream>
 #include <fstream>
+#include <unordered_set>
 class DetectorConstruction;
 class G4ParticleDefinition;
 
@@ -49,6 +51,27 @@ class G4ParticleDefinition;
 
 class Run : public G4Run
 {
+
+ // --- TPB validation (minimal) ---
+private:
+  G4int fChk_CreatedInnerScint = 0;  // # optical photons born by Scintillation in innerCell
+  G4int fChk_WLSAbs_fromInner  = 0;  // # OpWLS absorptions of those same tracks
+  G4int fChk_WLSEmit_fromInner = 0;  // # OpWLS-emitted secondaries from those absorptions
+
+public:
+  inline void AddChkCreatedInnerScint(int n=1){ fChk_CreatedInnerScint += n; }
+  inline void AddChkWLSAbsFromInner(int n=1){  fChk_WLSAbs_fromInner  += n; }
+  inline void AddChkWLSEmitFromInner(int n=1){ fChk_WLSEmit_fromInner += n; }
+
+  inline G4int GetChkCreatedInnerScint() const { return fChk_CreatedInnerScint; }
+  inline G4int GetChkWLSAbsFromInner()  const { return fChk_WLSAbs_fromInner; }
+  inline G4int GetChkWLSEmitFromInner() const { return fChk_WLSEmit_fromInner; }
+
+  std::unordered_set<int> completedEvents;
+  inline bool completedEvent(int eventID) {
+    return completedEvents.insert(eventID).second; // true only the first time
+  }
+
  public:
    G4int numInteractions;
    G4int numElastic;
@@ -78,7 +101,14 @@ class Run : public G4Run
    void SetTpbEfficiency(G4double value) {
        tpb = value;
    }
-  
+ 
+   // Appenders used by EventAction at EndOfEvent
+   void AppendPhotHitsCSV(const std::string& s) { fPhotHitsCSV += s; }
+   void AppendEvtStatsCSV(const std::string& s) { fEvtStatsCSV += s; }
+
+   const std::string& GetPhotHitsCSV() const { return fPhotHitsCSV; }
+   const std::string& GetEvtStatsCSV() const { return fEvtStatsCSV; }
+
    void addNumInteractions(){numInteractions+=1;}; 
    void addNumElastic(){numElastic+=1;};
    void addNumInelastic(){numInelastic+=1;};
@@ -133,6 +163,9 @@ class Run : public G4Run
     DetectorConstruction*  fDetector;
     G4ParticleDefinition*  fParticle;
     G4double  fEkin;
+
+    std::string fPhotHitsCSV;
+    std::string fEvtStatsCSV;
                            
     G4double fEnergyDeposit,  fEnergyDeposit2;
     G4double fTrakLenCharged, fTrakLenCharged2;

@@ -50,27 +50,55 @@ Run::Run(DetectorConstruction* det)
   fParticle(0), fEkin(0.)
 {
 
-  const PrimaryGeneratorAction* prim = static_cast<const PrimaryGeneratorAction*>(G4RunManager::GetRunManager()->GetUserPrimaryGeneratorAction());
-  G4double energy = prim->GetParticleGun()->GetParticleEnergy()/CLHEP::MeV;
+  fPhotHitsCSV.clear();
+
+  G4int nPMTsTop = det->GetTopPMTs();
+  G4int nPMTsBot = det->GetBotPMTs();
+  G4int nSiPMRows = det->GetSiPMRows();
+
   std::stringstream ss;
-  ss << "numPE_" << det->absorptionLength[0]/CLHEP::cm << "_cm_absLen_" << energy << "_MeV.csv";
+  ss << "numPE_" << nPMTsTop << "_topPMTs_" << nPMTsBot << "_botPMTs_" << nSiPMRows << "_SiPMRows.csv";
   std::string filename = ss.str();
   csvfi.open(filename);
-  csvfi << "eventID" << "," << "numPE" << "," << "numPhotons" << "," << "eDep" << "," << "numElasticSensitive" << "," << "numInelastic" << "," << "nCapture" << "," << std::endl;
+  csvfi << "eventID" << "," << "numPE" << "," << "numPhotons" << "," << "eDep" << "," << "numElasticSensitive" << "," << "numInelastic" << "," << "nCapture" << "," << "tof" << "," << "detector" << "    ," << "nucleusRecoilEnergy" << "," << "scatteredNotSensitive" << "," << "InelasticSensitive" << "," << std::endl;
   csvfi.close();
+  
+  //G4cout << "fPhotHitsCSV size :" << fPhotHitsCSV.size() << G4endl;
+  //const PrimaryGeneratorAction* prim = static_cast<const PrimaryGeneratorAction*>(G4RunManager::GetRunManager()->GetUserPrimaryGeneratorAction());
+  //G4double energy = prim->GetParticleGun()->GetParticleEnergy()/CLHEP::MeV;
+  //std::stringstream ss;
+  //ss << "numPE_" << det->absorptionLength[0]/CLHEP::cm << "_cm_absLen_" << energy << "_MeV.csv";
+  //std::string filename = ss.str();
+  //csvfi.open(filename);
+  //csvfi << "eventID" << "," << "numPE" << "," << "numPhotons" << "," << "eDep" << "," << "numElasticSensitive" << "," << "numInelastic" << "," << "nCapture" << "," << "tof" << "," << "detector" << "," << "nucleusRecoilEnergy" << "," << "scatteredNotSensitive" << "," << "InelasticSensitive" << "," << std::endl;
+  //csvfi.close();
 
-  csvfi.open("scatterStats.csv");
-  csvfi << "eventID" << "," << "ExtScatter" << "," << "CryoScatter" << "," << "innerLayerScatter" <<  "," << "outerCellScatterAngle" << "," << "CryoScatterAngle" << "," << "outerCellEDep" << "," << "CryoEDep" << "," << "innerLayerEDep" << "," << "numElasticSensitive" << "," << "numInelasticSensitive" << "," << std::endl;
-  csvfi.close();
+  //std::stringstream ss2;
+  //ss2 << "scatterStats_" << energy << "_MeV_" << det->outerDiameter/CLHEP::cm << "_cm.csv";
+  //std::string filename2 = ss2.str();
 
+  //csvfi.open(filename2);
+  //csvfi << "eventID" << "," << "ExtScatter" << "," << "CryoScatter" << "," << "innerLayerScatter" <<  "," << "outerCellScatterAngle" << "," << "CryoScatterAngle" << "," << "outerCellEDep" << "," << "CryoEDep" << "," << "innerLayerEDep" << "," << "numElasticSensitive" << "," << "numInelasticSensitive" << "," << "innerCellEDep" << "," << "fiducialIncomingEn" << "," << "extScatterBefore" << "," << "extScatterAfter" << "," << "escapeEn" << "," << "incomingAng" << "," << "good" << "," << std::endl;
+  //csvfi.close();
+
+ 
+   
   //csvfi.open("escapeDist.csv");
   //csvfi << "eventID" << "," << "numSurace" << "," << "numBases" << "," << std::endl;
   //csvfi.close();
 
-  //csvfi.open("absTime.csv");
-  //csvfi << "eventID" << "," << "tAbs" << "," << std::endl;
+  csvfi.open("tof.csv");
+  csvfi << "eventID" << "," << "tof" << "," << "detector" << "," << "numElasticSensitive" << "," << "ExtScatter" << "," << "CryoScatter" << "," << "innerLayerScatter" << "," << std::endl;
+  csvfi.close();
+
+
+  //csvfi.open("photHits.csv");
+  //csvfi << "eventID" << "," << "trackID" << "," << "surface" << "," << "u" << "," << "v" << "," << "tAbs" << "," << std::endl;
   //csvfi.close();
 
+  //csvfi.open("evtStats.csv");
+  //csvfi << "eventID" << "," << "detector" << "," << "tOne" << "," << "numElasticSensitive" << "," << "numInelasticSensitive" << "," << "ExtScatter" << "," << "numInelastic" << "," << "good" << "," << std::endl;
+  //csvfi.close();
 
   //tpb = 0.1*1.22;
   //std::stringstream ss;
@@ -132,6 +160,14 @@ void Run::Merge(const G4Run* run)
 {
   const Run* localRun = static_cast<const Run*>(run);
 
+  // --- TPB validation (minimal) ---
+  //fChk_CreatedInnerScint += localRun->fChk_CreatedInnerScint;
+  //fChk_WLSAbs_fromInner  += localRun->fChk_WLSAbs_fromInner;
+  //fChk_WLSEmit_fromInner += localRun->fChk_WLSEmit_fromInner;
+
+  //fPhotHitsCSV += localRun->fPhotHitsCSV;
+  //fEvtStatsCSV += localRun->fEvtStatsCSV;
+
   // pass information about primary particle
   fParticle = localRun->fParticle;
   fEkin     = localRun->fEkin;
@@ -183,7 +219,7 @@ void Run::EndOfRun()
  // std::cout << "total number of interactions: " << numInteractions << std::endl;
   //std::cout << "number of elastic interactions: " << numElastic << std::endl;
   //std::cout << "number of inelastic interactions: " << numInelastic << std::endl;
-  std::cout << "number of optical photons passed = " << numPassed << std::endl;
+  //std::cout << "number of optical photons passed = " << numPassed << std::endl;
   //std::cout << "number of single elastic events with 45-55 keV Ar recoil nucleus is : " << numSuc << std::endl;
   //std::cout << "number of background events that entered the liquid scintillator is : " << numBackground << std::endl;
 
@@ -279,93 +315,93 @@ void Run::EndOfRun()
   G4double meandEdx  = fEnergyDeposit/length;
   G4double stopPower = meandEdx/density;  
 
-  G4cout << "\n ======================== run summary ======================\n";
+//  G4cout << "\n ======================== run summary ======================\n";
 
-  G4int prec = G4cout.precision(3);
-  
-  G4cout << "\n The run was " << TotNbofEvents << " " << partName << " of "
-         << G4BestUnit(fEkin,"Energy") << " through " 
-         << G4BestUnit(length,"Length") << " of "
-         << material->GetName() << " (density: " 
-         << G4BestUnit(density,"Volumic Mass") << ")" << G4endl;
-  
-  G4cout.precision(4);
-  
-  G4cout << "\n Total energy deposit in absorber per event = "
-         << G4BestUnit(fEnergyDeposit,"Energy") << " +- "
-         << G4BestUnit(rmsEdep,      "Energy") 
-         << G4endl;
-         
-  G4cout << "\n -----> Mean dE/dx = " << meandEdx/(MeV/cm) << " MeV/cm"
-         << "\t(" << stopPower/(MeV*cm2/g) << " MeV*cm2/g)"
-         << G4endl;
-         
-  G4cout << "\n From formulas :" << G4endl; 
-  G4cout << "   restricted dEdx = " << dEdxTable/(MeV/cm) << " MeV/cm"
-         << "\t(" << stopTable/(MeV*cm2/g) << " MeV*cm2/g)"
-         << G4endl;
-         
-  G4cout << "   full dEdx       = " << dEdxFull/(MeV/cm) << " MeV/cm"
-         << "\t(" << stopFull/(MeV*cm2/g) << " MeV*cm2/g)"
-         << G4endl;
-         
-  G4cout << "\n Leakage :  primary = "
-         << G4BestUnit(fEnergyLeak[0],"Energy") << " +- "
-         << G4BestUnit(rmsEl0,       "Energy")
-         << "   secondaries = "
-         << G4BestUnit(fEnergyLeak[1],"Energy") << " +- "
-         << G4BestUnit(rmsEl1,       "Energy")          
-         << G4endl;
-         
-  G4cout << " Energy balance :  edep + eleak = "
-         << G4BestUnit(EnergyBalance,"Energy")
-         << G4endl;         
-                           
-  G4cout << "\n Total track length (charged) in absorber per event = "
-         << G4BestUnit(fTrakLenCharged,"Length") << " +- "
-         << G4BestUnit(rmsTLCh,       "Length") << G4endl;
-
-  G4cout << " Total track length (neutral) in absorber per event = "
-         << G4BestUnit(fTrakLenNeutral,"Length") << " +- "
-         << G4BestUnit(rmsTLNe,       "Length") << G4endl;
-
-  G4cout << "\n Number of steps (charged) in absorber per event = "
-         << fNbStepsCharged << " +- " << rmsStCh << G4endl;
-
-  G4cout << " Number of steps (neutral) in absorber per event = "
-         << fNbStepsNeutral << " +- " << rmsStNe << G4endl;
-
-  G4cout << "\n Number of secondaries per event : Gammas = " << Gamma
-         << ";   electrons = " << Elect
-           << ";   positrons = " << Posit << G4endl;
-
-  G4cout << "\n Number of events with the primary particle transmitted = "
-         << transmit[1] << " %" << G4endl;
-
-  G4cout << " Number of events with at least  1 particle transmitted "
-         << "(same charge as primary) = " << transmit[0] << " %" << G4endl;
-
-  G4cout << "\n Number of events with the primary particle reflected = "
-         << reflect[1] << " %" << G4endl;
-
-  G4cout << " Number of events with at least  1 particle reflected "
-         << "(same charge as primary) = " << reflect[0] << " %" << G4endl;
-
-  // compute width of the Gaussian central part of the MultipleScattering
-  //
-  G4cout << "\n MultipleScattering:" 
-         << "\n  rms proj angle of transmit primary particle = "
-         << rmsMsc/mrad << " mrad (central part only)" << G4endl;
-
-  G4cout << "  computed theta0 (Highland formula)          = "
-         << ComputeMscHighland()/mrad << " mrad" << G4endl;
-           
-  G4cout << "  central part defined as +- "
-         << fMscThetaCentral/mrad << " mrad; " 
-         << "  Tail ratio = " << tailMsc << " %" << G4endl;
-         
-  // normalize histograms
-  //
+G4int prec = G4cout.precision(3);
+//  
+//  G4cout << "\n The run was " << TotNbofEvents << " " << partName << " of "
+//         << G4BestUnit(fEkin,"Energy") << " through " 
+//         << G4BestUnit(length,"Length") << " of "
+//         << material->GetName() << " (density: " 
+//         << G4BestUnit(density,"Volumic Mass") << ")" << G4endl;
+//  
+//  G4cout.precision(4);
+//  
+//  G4cout << "\n Total energy deposit in absorber per event = "
+//         << G4BestUnit(fEnergyDeposit,"Energy") << " +- "
+//         << G4BestUnit(rmsEdep,      "Energy") 
+//         << G4endl;
+//         
+//  G4cout << "\n -----> Mean dE/dx = " << meandEdx/(MeV/cm) << " MeV/cm"
+//         << "\t(" << stopPower/(MeV*cm2/g) << " MeV*cm2/g)"
+//         << G4endl;
+//         
+//  G4cout << "\n From formulas :" << G4endl; 
+//  G4cout << "   restricted dEdx = " << dEdxTable/(MeV/cm) << " MeV/cm"
+//         << "\t(" << stopTable/(MeV*cm2/g) << " MeV*cm2/g)"
+//         << G4endl;
+//         
+//  G4cout << "   full dEdx       = " << dEdxFull/(MeV/cm) << " MeV/cm"
+//         << "\t(" << stopFull/(MeV*cm2/g) << " MeV*cm2/g)"
+//         << G4endl;
+//         
+//  G4cout << "\n Leakage :  primary = "
+//         << G4BestUnit(fEnergyLeak[0],"Energy") << " +- "
+//         << G4BestUnit(rmsEl0,       "Energy")
+//         << "   secondaries = "
+//         << G4BestUnit(fEnergyLeak[1],"Energy") << " +- "
+//         << G4BestUnit(rmsEl1,       "Energy")          
+//         << G4endl;
+//         
+//  G4cout << " Energy balance :  edep + eleak = "
+//         << G4BestUnit(EnergyBalance,"Energy")
+//         << G4endl;         
+//                           
+//  G4cout << "\n Total track length (charged) in absorber per event = "
+//         << G4BestUnit(fTrakLenCharged,"Length") << " +- "
+//         << G4BestUnit(rmsTLCh,       "Length") << G4endl;
+//
+//  G4cout << " Total track length (neutral) in absorber per event = "
+//         << G4BestUnit(fTrakLenNeutral,"Length") << " +- "
+//         << G4BestUnit(rmsTLNe,       "Length") << G4endl;
+//
+//  G4cout << "\n Number of steps (charged) in absorber per event = "
+//         << fNbStepsCharged << " +- " << rmsStCh << G4endl;
+//
+//  G4cout << " Number of steps (neutral) in absorber per event = "
+//         << fNbStepsNeutral << " +- " << rmsStNe << G4endl;
+//
+//  G4cout << "\n Number of secondaries per event : Gammas = " << Gamma
+//         << ";   electrons = " << Elect
+//           << ";   positrons = " << Posit << G4endl;
+//
+//  G4cout << "\n Number of events with the primary particle transmitted = "
+//         << transmit[1] << " %" << G4endl;
+//
+//  G4cout << " Number of events with at least  1 particle transmitted "
+//         << "(same charge as primary) = " << transmit[0] << " %" << G4endl;
+//
+//  G4cout << "\n Number of events with the primary particle reflected = "
+//         << reflect[1] << " %" << G4endl;
+//
+//  G4cout << " Number of events with at least  1 particle reflected "
+//         << "(same charge as primary) = " << reflect[0] << " %" << G4endl;
+//
+//  // compute width of the Gaussian central part of the MultipleScattering
+//  //
+//  G4cout << "\n MultipleScattering:" 
+//         << "\n  rms proj angle of transmit primary particle = "
+//         << rmsMsc/mrad << " mrad (central part only)" << G4endl;
+//
+//  G4cout << "  computed theta0 (Highland formula)          = "
+//         << ComputeMscHighland()/mrad << " mrad" << G4endl;
+//           
+//  G4cout << "  central part defined as +- "
+//         << fMscThetaCentral/mrad << " mrad; " 
+//         << "  Tail ratio = " << tailMsc << " %" << G4endl;
+//         
+//  // normalize histograms
+//  //
   //G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
   
   //G4int ih = 1;

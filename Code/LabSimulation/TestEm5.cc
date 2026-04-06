@@ -32,7 +32,7 @@
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 #include "G4Types.hh"
-
+#include <csignal>
 #include "G4RunManagerFactory.hh"
 #include "G4PhysListFactory.hh"
 #include "G4OpticalPhysics.hh"
@@ -56,8 +56,14 @@
 #include "G4EmLowEPPhysics.hh"
 #include "G4VisExecutive.hh"
 #include "G4UIExecutive.hh"
+#include "G4GeometryTolerance.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//void SignalHandler(int) {
+ //   G4cout << "\n>>> SIGINT received, aborting current run cleanly...\n" << G4endl;
+  //  G4RunManager::GetRunManager()->AbortRun(true); // true = soft abort
+//}
 
 int main(int argc,char** argv) {
 
@@ -68,9 +74,25 @@ int main(int argc,char** argv) {
   //Use SteppingVerbose with Unit
   G4int precision = 4;
   G4SteppingVerbose::UseBestUnit(precision);
-  
+ 
+  //std::signal(SIGINT, SignalHandler);
+ 
   //Creating run manager
   auto* runManager = G4RunManagerFactory::CreateRunManager();
+
+  // parse arguments for mt in interactive mode
+  if (argc == 2){ // ./TestEm5 #num_threads
+
+      G4int nThreads = G4UIcommand::ConvertToInt(argv[1]);
+      runManager->SetNumberOfThreads(nThreads);
+      G4cout << "===== TestEm5 is started with " <<  runManager->GetNumberOfThreads() << " threads =====" << G4endl;
+
+      ui = new G4UIExecutive(argc,argv);
+      //Use SteppingVerbose with Unit
+      G4int precision = 4;
+      G4SteppingVerbose::UseBestUnit(precision);
+
+  }
 
   if (argc==3) {
     G4int nThreads = G4UIcommand::ConvertToInt(argv[2]);
@@ -96,14 +118,14 @@ int main(int argc,char** argv) {
   //G4DecayPhysics* decayPhysics = new G4DecayPhysics();
   //G4IonPhysics* ionPhysics = new G4IonPhysics();
   G4OpticalPhysics* opticalPhysics = new G4OpticalPhysics();
+
   auto opticalParams = G4OpticalParameters::Instance();
   
-  opticalParams->SetWLSTimeProfile("delta");
+  opticalParams->SetWLSTimeProfile("exponential");
   
   opticalParams->SetScintTrackSecondariesFirst(true);
   
-  opticalParams->SetCerenkovMaxPhotonsPerStep(100);
-  opticalParams->SetCerenkovMaxBetaChange(10.0);
+  opticalParams->SetCerenkovMaxPhotonsPerStep(0);
   //opticalParams->SetCerenkovTrackSecondariesFirst(true);
  
   //physicsList->RegisterPhysics(opticalPhysics);

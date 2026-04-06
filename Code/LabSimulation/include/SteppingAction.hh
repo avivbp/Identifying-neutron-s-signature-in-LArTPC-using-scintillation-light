@@ -55,6 +55,11 @@ class EventAction;
 
 class SteppingAction : public G4UserSteppingAction
 {
+
+  private:
+   G4Material*      fTPBMat        = nullptr;
+   G4LogicalVolume* fInnerCellLV   = nullptr;
+
   public:
    std::ofstream csvfile;
    G4double tpbEfic;
@@ -62,16 +67,8 @@ class SteppingAction : public G4UserSteppingAction
   ~SteppingAction();
 
    virtual void UserSteppingAction(const G4Step*);
-
-   G4bool withinArapuca(const G4Step* aStep){
-       G4double xSize = 230; //half size in cm
-       G4double ySize = 305; //half size in cm
-       G4double zSize = 360; //half size in cm
-       const G4ThreeVector & post = aStep->GetPostStepPoint()->GetPosition()/CLHEP::cm;
-       G4double epsilon = pow(10,-6);
-       G4bool within = (fabs(post.z() + zSize) < epsilon || fabs(post.z() - zSize) < epsilon) && fabs(post.x() < 98.*CLHEP::cm) && fabs(post.y() < 98.*CLHEP::cm);
-       return within;
-   };
+   G4bool withinArapuca(const G4Step* aStep,G4double height);
+   G4bool withinPMTs(const G4Step* aStep,G4double height);
 
    G4double calcStepLength(const G4Step* aStep){
        const G4ThreeVector & pre = aStep->GetPreStepPoint()->GetPosition()/CLHEP::cm;
